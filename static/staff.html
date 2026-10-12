@@ -1898,8 +1898,9 @@ document.querySelectorAll('.pin-key[data-digit]').forEach(key => {
       // Auto-validate after small delay so last dot renders
       setTimeout(() => {
         if (pinBuffer === STAFF_PIN) {
+          const resolve = pinResolve;
           closePinModal();
-          if (pinResolve) pinResolve(true);
+          if (resolve) resolve(true);
         } else {
           document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
           pinBuffer = '';
@@ -1922,8 +1923,9 @@ document.getElementById('pin-delete').addEventListener('click', () => {
 });
 
 document.getElementById('pin-cancel').addEventListener('click', () => {
+  const reject = pinReject;
   closePinModal();
-  if (pinReject) pinReject(new Error('Cancelled'));
+  if (reject) reject(new Error('Cancelled'));
 });
 
 // Keyboard support for PIN modal
