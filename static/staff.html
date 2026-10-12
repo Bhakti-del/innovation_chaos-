@@ -1970,13 +1970,15 @@ function closeConfirmModal() {
 }
 
 document.getElementById('confirm-yes').addEventListener('click', () => {
+  const resolve = confirmResolve;
   closeConfirmModal();
-  if (confirmResolve) confirmResolve(true);
+  if (resolve) resolve(true);
 });
 
 document.getElementById('confirm-no').addEventListener('click', () => {
+  const reject = confirmReject;
   closeConfirmModal();
-  if (confirmReject) confirmReject(new Error('Cancelled'));
+  if (reject) reject(new Error('Cancelled'));
 });
 
 /* ═══════════════════════════════════════════
