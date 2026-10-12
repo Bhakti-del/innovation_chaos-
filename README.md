@@ -37,9 +37,9 @@ The main AI component is a demand forecaster. Four smaller pieces feed it or bui
 | Leftover discount *(extension)* | Manager | Lists safe surplus at a discount in the last 30 minutes |
 | Audit log | Manager | Records every staff action for review |
 
-## Design constraints
+## Non-functional requirements
 
-Each constraint from the brief has a concrete implementation and a way to show it live.
+Beyond core features, the system is designed around six requirements that reflect the realities of a college canteen environment: shared devices, unreliable internet, limited hardware, and the need to protect student and staff data. Each has a concrete implementation and a way to show it live.
 
 ### Hands-free (voice commands)
 
@@ -133,7 +133,7 @@ The prep plan adds a 10% safety buffer to the lower bound of the range and round
 
 **Demo:** show predicted vs. actual sales on a held-out slice of the synthetic dataset; display the prep plan on the kitchen dashboard.
 
-### Main feature removed (graceful degradation)
+### Graceful degradation (main feature removed)
 
 If AI prediction is unavailable the system steps down through four levels. Orders, billing and serving never depend on the model at any level.
 
