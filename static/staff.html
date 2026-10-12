@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartCanteen AI — Staff Dashboard</title>
+  <style>
+    /* ── CSS Variables ── */
+    :root {
+      --primary:       #1a237e;   /* dark blue — staff header */
+      --primary-dark:  #0d1757;
+      --primary-light: #3949ab;
+      --accent-green:  #2e7d32;
+      --accent-amber:  #f57f17;
+      --accent-red:    #c62828;
+      --surface:       #ffffff;
+      --surface-alt:   #f5f7ff;
+      --border:        #e0e0e0;
+      --text-primary:  #1a1a2e;
+      --text-secondary:#555566;
+      --text-muted:    #888899;
+      --shadow-sm:     0 2px 8px rgba(26,35,126,0.08);
+      --shadow-md:     0 4px 20px rgba(26,35,126,0.13);
+      --radius-sm:     8px;
+      --radius-md:     12px;
+      --radius-lg:     16px;
+      --transition:    0.2s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef0f8;
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      padding: 0 1.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .header-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .header-title span {
+      font-weight: 300;
+      opacity: 0.85;
+    }
+
+    .header-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 0.15rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+    }
+
+    .header-user-avatar {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    #header-college-id {
+      font-weight: 600;
+      opacity: 0.95;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Layout ── */
+    .main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    /* ── Section Cards ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      gap: 0.75rem;
+    }
+
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .section-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .icon-blue   { background: #e3f2fd; }
+    .icon-green  { background: #e8f5e9; }
+    .icon-amber  { background: #fff8e1; }
+    .icon-red    { background: #fce4ec; }
+    .icon-purple { background: #ede7f6; }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .card-body { padding: 1.25rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity var(--transition), transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover  { opacity: 0.88; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--accent-green); color: #fff; }
+    .btn-warning { background: var(--accent-amber); color: #fff; }
+    .btn-danger  { background: var(--accent-red); color: #fff; }
+    .btn-ghost   {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .badge-ai      { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+    .badge-fallback{ background: #fff3e0; color: #e65100; border: 1px solid #ffcc02; }
+    .badge-pending  { background: #fff3e0; color: #e65100; }
+    .badge-ready    { background: #e3f2fd; color: #0d47a1; }
+    .badge-collected{ background: #e8f5e9; color: #1b5e20; }
+    .badge-cancelled{ background: #fce4ec; color: #b71c1c; }
+    .badge-current  { background: var(--primary); color: #fff; }
+
+    /* ── Spinner ── */
+    .spinner-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: #fdecea;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .error-banner.visible { display: block; }
+
+    /* ─────────────────────────────────────────
+       SECTION 1 — PREP PLAN
+    ───────────────────────────────────────── */
+    .slot-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 1rem 1.25rem 0;
+    }
+
+    .slot-tab {
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text-secondary);
+      transition: all var(--transition);
+    }
+
+    .slot-tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .slot-tab.current-slot {
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .slot-tab.current-slot.active {
+      background: var(--accent-green);
+      color: #fff;
+    }
+
+    .forecast-table-wrap {
+      padding: 0 1.25rem 1.25rem;
+      overflow-x: auto;
+    }
+
+    .forecast-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.85rem;
+      font-size: 0.88rem;
+    }
+
+    .forecast-table thead tr {
+      background: var(--surface-alt);
+    }
+
+    .forecast-table th {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .forecast-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .forecast-table tbody tr:last-child td { border-bottom: none; }
+
+    .forecast-table tbody tr:hover { background: var(--surface-alt); }
+
+    .cook-now-qty {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    .slot-info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      flex-wrap: wrap;
+    }
+
+    .slot-stat {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .slot-stat strong { color: var(--text-primary); }
+
+    /* ─────────────────────────────────────────
+       SECTION 2 — ORDERS
+    ───────────────────────────────────────── */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .order-card {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: var(--surface);
+      transition: box-shadow var(--transition);
+    }
+
+    .order-card:hover { box-shadow: var(--shadow-sm); }
+
+    .order-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .order-id {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .order-student {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 0.1rem;
+    }
+
+    .order-slot-time {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    .order-items {
+      margin: 0.6rem 0;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .order-item-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .orders-empty {
+      text-align: center;
+      padding: 2.5rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .orders-empty .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+    .auto-refresh-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .refresh-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ─────────────────────────────────────────
+       SECTION 3 — MENU STOCK
+    ───────────────────────────────────────── */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+      padding: 1.25rem;
+    }
+
+    .menu-item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      gap: 0.75rem;
+      transition: border-color var(--transition);
+    }
+
+    .menu-item-card.sold-out {
+      border-color: #ef9a9a;
+      background: #fff8f8;
+      opacity: 0.8;
+    }
+
+    .menu-item-info { flex: 1; min-width: 0; }
+
+    .menu-item-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-item-price {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .menu-avail-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+    }
+
+    .avail-yes { background: #e8f5e9; color: #1b5e20; }
+    .avail-no  { background: #fce4ec; color: #b71c1c; }
+
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform var(--transition);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent-green); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+
+    /* ─────────────────────────────────────────
+       SECTION 4 — WASTE LOG
+    ───────────────────────────────────────── */
+    .waste-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .waste-form { grid-template-columns: 1fr; }
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group.full-width { grid-column: 1 / -1; }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-group select,
+    .form-group input[type="number"] {
+      padding: 0.55rem 0.8rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      background: #fafafa;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .form-group select:focus,
+    .form-group input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,35,126,0.12);
+      background: #fff;
+    }
+
+    .leftover-display {
+      display: flex;
+      align-items: center;
+      padding: 0.55rem 0.8rem;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent-red);
+      min-height: 42px;
+    }
+
+    .waste-form-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* ─────────────────────────────────────────
+       SECTION 5 — VOICE
+    ───────────────────────────────────────── */
+    .voice-section {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .mic-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      font-size: 1.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(26,35,126,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      user-select: none;
+    }
+
+    .mic-btn:hover { transform: scale(1.05); }
+
+    .mic-btn.recording {
+      background: linear-gradient(135deg, var(--accent-red), #e53935);
+      box-shadow: 0 4px 20px rgba(198,40,40,0.45);
+      animation: mic-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes mic-pulse {
+      0%,100% { box-shadow: 0 4px 20px rgba(198,40,40,0.45); }
+      50%      { box-shadow: 0 4px 28px rgba(198,40,40,0.7), 0 0 0 12px rgba(198,40,40,0.1); }
+    }
+
+    .mic-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .transcript-box {
+      width: 100%;
+      max-width: 480px;
+      min-height: 46px;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      font-style: italic;
+      text-align: center;
+    }
+
+    .transcript-box .placeholder { color: var(--text-muted); font-style: italic; }
+
+    .voice-commands-help {
+      width: 100%;
+      max-width: 480px;
+      background: #f5f7ff;
+      border: 1px solid #c5cae9;
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+    }
+
+    .voice-commands-help h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .voice-commands-help ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .voice-commands-help li {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .voice-commands-help li code {
+      background: #e8eaf6;
+      color: var(--primary);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    /* ─────────────────────────────────────────
+       PIN MODAL
+    ───────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+      transform: translateY(12px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .modal-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .pin-display {
+      display: flex;
+      gap: 0.65rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+      background: transparent;
+      transition: background 0.15s;
+    }
+
+    .pin-dot.filled { background: var(--primary); }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .pin-key {
+      padding: 0.7rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: background var(--transition), border-color var(--transition);
+      user-select: none;
+    }
+
+    .pin-key:hover { background: #e8eaf6; border-color: var(--primary-light); }
+    .pin-key:active { background: #c5cae9; }
+    .pin-key.delete { color: var(--accent-red); }
+    .pin-key.empty  { visibility: hidden; }
+
+    .pin-error {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--accent-red);
+      min-height: 1.2em;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-cancel-btn {
+      width: 100%;
+      padding: 0.6rem;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .modal-cancel-btn:hover { background: var(--surface-alt); }
+
+    /* ─────────────────────────────────────────
+       VOICE CONFIRM MODAL
+    ───────────────────────────────────────── */
+    .confirm-modal { max-width: 380px; }
+
+    .confirm-action-text {
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--border);
+    }
+
+    .confirm-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    /* ─────────────────────────────────────────
+       TOAST
+    ───────────────────────────────────────── */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      z-index: 600;
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.75rem 1.1rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      font-size: 0.87rem;
+      font-weight: 500;
+      max-width: 320px;
+      animation: toast-in 0.3s ease forwards;
+      pointer-events: all;
+    }
+
+    .toast.success { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+    .toast.error   { background: #fdecea; color: #c62828; border: 1px solid #ef9a9a; }
+    .toast.info    { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(24px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(24px); }
+    }
+
+    /* ─────────────────────────────────────────
+       Responsive two-column layout
+    ───────────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ─────────────────────────────────────────
+       Misc helpers
+    ───────────────────────────────────────── */
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+    }
+
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: var(--primary);
+      color: #fff;
+      margin-left: 0.35rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 1.25rem;
+    }
+
+    #voice-not-supported {
+      font-size: 0.8rem;
+      color: var(--accent-amber);
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════ -->
+<header class="header" role="banner">
+  <div class="header-brand">
+    <div class="header-icon" aria-hidden="true">🍽️</div>
+    <div>
+      <div class="header-title">
+        SmartCanteen AI <span>—</span> Staff Dashboard
+        <span class="header-badge">Staff</span>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-user">
+      <div class="header-user-avatar" id="header-avatar" aria-hidden="true">S</div>
+      <span id="header-college-id">Loading…</span>
+    </div>
+    <button class="btn-logout" id="btn-logout" aria-label="Log out">Logout</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════ -->
+<main class="main" role="main">
+
+  <!-- ─────────────────────────────────────────
+       SECTION 1 — PREP PLAN
+  ───────────────────────────────────────── -->
+  <section class="card" id="section-prep-plan" aria-labelledby="prep-plan-heading">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="section-icon icon-blue" aria-hidden="true">📋</div>
+        <div>
+          <h2 class="card-title" id="prep-plan-heading">Prep Plan</h2>
+          <div class="card-subtitle">Next 4 pickup slots — batch cooking guide</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-refresh-forecast" aria-label="Refresh forecast">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <!-- Slot tabs -->
+    <div class="slot-tabs" id="slot-tabs" role="tablist" aria-label="Pickup slots"></div>
+
+    <!-- Forecast table -->
+    <div class="forecast-table-wrap" id="forecast-table-wrap">
+      <div class="spinner-wrap" id="forecast-spinner">
+        <div class="spinner"></div> Loading forecast…
+      </div>
+      <div class="error-banner" id="forecast-error" role="alert"></div>
+      <table class="forecast-table" id="forecast-table" style="display:none" aria-label="Prep plan">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Predicted</th>
+            <th>Range (low–high)</th>
+            <th>Cook Now</th>
+            <th>Model</th>
+          </tr>
+        </thead>
+        <tbody id="forecast-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="slot-info-row" id="slot-info-row" style="display:none">
+      <div class="slot-stat">🕐 <span id="slot-info-time">—</span></div>
+      <div class="slot-stat">📦 Orders: <strong id="slot-info-orders">—</strong> / <strong id="slot-info-cap">—</strong></div>
+      <div class="slot-stat" id="slot-info-model-wrap">Model: <strong id="slot-info-model">—</strong></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────
+       SECTION 2 — LIVE ORDERS
+  ───────────────────────────────────────── -->
+  <section class="card" aria-labelledby="orders-heading">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="section-icon icon-green" aria-hidden="true">🧾</div>
+        <div>
+          <h2 class="card-title" id="orders-heading">
+            Live Orders
+            <span class="count-badge" id="orders-count">0</span>
+          </h2>
+          <div class="card-subtitle">Active student orders — update status in real time</div>
+        </div>
+      </div>
+      <div class="auto-refresh-bar">
+        <div class="refresh-dot" aria-hidden="true"></div>
+        <span id="auto-refresh-label">Auto-refresh in <strong id="countdown">30</strong>s</span>
+        <button class="btn btn-ghost btn-sm" id="btn-refresh-orders" aria-label="Refresh orders now">↻</button>
+      </div>
+    </div>
+
+    <div id="orders-spinner" class="spinner-wrap"><div class="spinner"></div> Loading orders…</div>
+    <div class="error-banner" id="orders-error" role="alert"></div>
+    <div class="orders-grid" id="orders-grid" style="display:none"></div>
+    <div class="orders-empty" id="orders-empty" style="display:none">
+      <div class="empty-icon">📭</div>
+      <div>No active orders right now</div>
+    </div>
+  </section>
+
+  <!-- Two-column: Menu Stock + Waste Log -->
+  <div class="two-col">
+
+    <!-- ─────────────────────────────────────────
+         SECTION 3 — MENU STOCK
+    ───────────────────────────────────────── -->
+    <section class="card" aria-labelledby="menu-heading">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="section-icon icon-amber" aria-hidden="true">🍱</div>
+          <div>
+            <h2 class="card-title" id="menu-heading">Menu Stock</h2>
+            <div class="card-subtitle">Toggle availability per item</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-refresh-menu" aria-label="Refresh menu">↻</button>
+      </div>
+
+      <div id="menu-spinner" class="spinner-wrap"><div class="spinner"></div> Loading menu…</div>
+      <div class="error-banner" id="menu-error" role="alert"></div>
+      <div class="menu-grid" id="menu-grid" style="display:none"></div>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         SECTION 4 — WASTE LOG
+    ───────────────────────────────────────── -->
+    <section class="card" aria-labelledby="waste-heading">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="section-icon icon-red" aria-hidden="true">♻️</div>
+          <div>
+            <h2 class="card-title" id="waste-heading">Log Waste</h2>
+            <div class="card-subtitle">End-of-day leftover recording</div>
+          </div>
+        </div>
+      </div>
+
+      <form class="waste-form" id="waste-form" novalidate aria-label="Waste log form">
+        <div class="form-group full-width">
+          <label for="waste-item">Menu Item</label>
+          <select id="waste-item" name="menu_item_id" required>
+            <option value="">— select item —</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="waste-prepared">Prepared Qty</label>
+          <input type="number" id="waste-prepared" name="prepared_qty"
+                 min="0" max="9999" placeholder="e.g. 80" required />
+        </div>
+
+        <div class="form-group">
+          <label for="waste-sold">Sold Qty</label>
+          <input type="number" id="waste-sold" name="sold_qty"
+                 min="0" max="9999" placeholder="e.g. 72" required />
+        </div>
+
+        <div class="form-group">
+          <label>Leftover (auto-calculated)</label>
+          <div class="leftover-display" id="leftover-display" aria-live="polite">—</div>
+        </div>
+
+        <div class="form-group">
+          <label for="waste-date">Date</label>
+          <input type="number" id="waste-date" name="date_field" style="display:none" />
+          <!-- show as text label -->
+          <div class="leftover-display" id="waste-date-display"
+               style="color:var(--text-secondary);font-size:0.88rem;font-weight:500;"></div>
+        </div>
+
+        <div class="form-group waste-form-actions">
+          <button type="submit" class="btn btn-success" id="waste-submit-btn">
+            ✓ Log Waste
+          </button>
+          <div class="error-banner" id="waste-error" role="alert" style="flex:1"></div>
+        </div>
+      </form>
+    </section>
+
+  </div><!-- /.two-col -->
+
+  <!-- ─────────────────────────────────────────
+       SECTION 5 — VOICE COMMANDS
+  ───────────────────────────────────────── -->
+  <section class="card" aria-labelledby="voice-heading">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="section-icon icon-purple" aria-hidden="true">🎙️</div>
+        <div>
+          <h2 class="card-title" id="voice-heading">Voice Commands</h2>
+          <div class="card-subtitle">Push-to-talk · PIN required before each action</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="voice-section">
+      <button class="mic-btn" id="mic-btn"
+              aria-label="Hold to speak voice command"
+              aria-pressed="false">🎙️</button>
+      <div class="mic-label" id="mic-label">Hold to speak</div>
+      <p id="voice-not-supported">Voice commands require a browser that supports the Web Speech API (e.g. Chrome or Edge).</p>
+
+      <!-- Transcript box -->
+      <div class="transcript-box" id="transcript-box" role="status" aria-live="polite">
+        <span class="placeholder">Transcript will appear here…</span>
+      </div>
+
+      <!-- Help -->
+      <div class="voice-commands-help" aria-label="Available voice commands">
+        <h4>Available commands</h4>
+        <ul>
+          <li><code>mark [item] sold out</code> — set item unavailable</li>
+          <li><code>log [qty] leftover [item]</code> — pre-fill waste form</li>
+          <li><code>show prep plan</code> — scroll to prep plan section</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main><!-- /.main -->
+
+<!-- ═══════════════════════════════════════════
+     PIN MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="pin-modal" role="dialog"
+     aria-modal="true" aria-labelledby="pin-modal-title">
+  <div class="modal">
+    <h3 id="pin-modal-title">🔐 Staff PIN Required</h3>
+    <p class="modal-subtitle">Enter your 4-digit PIN to authorise this action</p>
+
+    <div class="pin-display" aria-hidden="true">
+      <div class="pin-dot" id="pin-d0"></div>
+      <div class="pin-dot" id="pin-d1"></div>
+      <div class="pin-dot" id="pin-d2"></div>
+      <div class="pin-dot" id="pin-d3"></div>
+    </div>
+
+    <div class="pin-keypad" role="group" aria-label="PIN keypad">
+      <button class="pin-key" data-digit="1">1</button>
+      <button class="pin-key" data-digit="2">2</button>
+      <button class="pin-key" data-digit="3">3</button>
+      <button class="pin-key" data-digit="4">4</button>
+      <button class="pin-key" data-digit="5">5</button>
+      <button class="pin-key" data-digit="6">6</button>
+      <button class="pin-key" data-digit="7">7</button>
+      <button class="pin-key" data-digit="8">8</button>
+      <button class="pin-key" data-digit="9">9</button>
+      <button class="pin-key empty" aria-hidden="true"></button>
+      <button class="pin-key" data-digit="0">0</button>
+      <button class="pin-key delete" id="pin-delete" aria-label="Delete digit">⌫</button>
+    </div>
+
+    <div class="pin-error" id="pin-error" role="alert"></div>
+    <button class="modal-cancel-btn" id="pin-cancel">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VOICE CONFIRM MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="confirm-modal" role="dialog"
+     aria-modal="true" aria-labelledby="confirm-modal-title">
+  <div class="modal confirm-modal">
+    <h3 id="confirm-modal-title">Confirm Action</h3>
+    <p class="modal-subtitle">Please review the recognised command</p>
+    <div class="confirm-action-text" id="confirm-action-text"></div>
+    <div class="confirm-buttons">
+      <button class="btn btn-success" id="confirm-yes">✓ Confirm</button>
+      <button class="btn btn-ghost"   id="confirm-no">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════
+   AUTH GUARD — redirect to login if no token
+════════════════════════════════════════════ */
+(function authGuard() {
+  const token = localStorage.getItem('access_token');
+  const role  = localStorage.getItem('role');
+  if (!token || (role !== 'staff' && role !== 'manager')) {
+    window.location.href = 'login.html';
+  }
+})();
+
+/* ═══════════════════════════════════════════
+   GLOBALS
+════════════════════════════════════════════ */
+const TOKEN      = () => localStorage.getItem('access_token');
+const COLLEGE_ID = () => localStorage.getItem('college_id') || 'Staff';
+const STAFF_PIN  = '1234'; // demo: client-side only; production must validate server-side
+
+let forecastData    = null;   // raw API response
+let menuItems       = [];     // [{id, name, price, is_available}]
+let activeSlotIndex = 0;      // which slot tab is selected
+let ordersTimer     = null;   // setInterval handle
+let countdownVal    = 30;     // auto-refresh countdown
+let countdownTimer  = null;
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+════════════════════════════════════════════ */
+async function apiFetch(url, opts = {}) {
+  const headers = {
+    'Authorization': `Bearer ${TOKEN()}`,
+    'Content-Type':  'application/json',
+    ...(opts.headers || {}),
+  };
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) { doLogout(); throw new Error('Unauthorised'); }
+  return res;
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideError(el) {
+  el.textContent = '';
+  el.classList.remove('visible');
+}
+
+function showToast(msg, type = 'success', durationMs = 3500) {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type] || '•'}</span><span>${escHtml(msg)}</span>`;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.style.animation = 'toast-out 0.3s ease forwards';
+    setTimeout(() => t.remove(), 300);
+  }, durationMs);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTime(isoOrTime) {
+  // accepts ISO datetime or HH:MM string
+  if (!isoOrTime) return '—';
+  try {
+    const d = new Date(isoOrTime);
+    if (isNaN(d)) return isoOrTime; // treat as already-formatted string
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return isoOrTime;
+  }
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isCurrentSlot(slotTime) {
+  if (!slotTime) return false;
+  try {
+    const now  = new Date();
+    const slot = new Date(slotTime);
+    const diff = (slot - now) / 60000; // minutes
+    return diff >= -15 && diff <= 0;   // within the last 15 min
+  } catch { return false; }
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+════════════════════════════════════════════ */
+(function initHeader() {
+  // Attempt to pull college_id from JWT payload (base64 decode)
+  const token = TOKEN();
+  let collegeId = localStorage.getItem('college_id') || '';
+  if (!collegeId && token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      collegeId = payload.sub || payload.college_id || '';
+      if (collegeId) localStorage.setItem('college_id', collegeId);
+    } catch { /* ignore */ }
+  }
+  const displayId = collegeId || 'Staff';
+  document.getElementById('header-college-id').textContent = displayId;
+  document.getElementById('header-avatar').textContent = displayId.charAt(0).toUpperCase();
+})();
+
+document.getElementById('btn-logout').addEventListener('click', doLogout);
+
+function doLogout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('college_id');
+  window.location.href = 'login.html';
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 1 — PREP PLAN
+════════════════════════════════════════════ */
+async function loadForecast() {
+  const spinner   = document.getElementById('forecast-spinner');
+  const errorEl   = document.getElementById('forecast-error');
+  const table     = document.getElementById('forecast-table');
+  const infoRow   = document.getElementById('slot-info-row');
+  const tabsEl    = document.getElementById('slot-tabs');
+
+  spinner.style.display = 'flex';
+  table.style.display   = 'none';
+  infoRow.style.display = 'none';
+  hideError(errorEl);
+  tabsEl.innerHTML = '';
+
+  try {
+    const res = await apiFetch('/api/forecast');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    forecastData = await res.json();
+
+    const slots = forecastData.slots || [];
+    if (!slots.length) {
+      showError(errorEl, 'No upcoming slots found.');
+      return;
+    }
+
+    // Build tabs
+    slots.forEach((slot, idx) => {
+      const isCurrent = isCurrentSlot(slot.slot_time);
+      const btn = document.createElement('button');
+      btn.className    = 'slot-tab' + (isCurrent ? ' current-slot' : '') + (idx === activeSlotIndex ? ' active' : '');
+      btn.textContent  = fmtTime(slot.slot_time);
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', idx === activeSlotIndex ? 'true' : 'false');
+      btn.setAttribute('aria-controls', 'forecast-table');
+      if (isCurrent) {
+        const mark = document.createElement('span');
+        mark.textContent = ' ●';
+        mark.style.fontSize = '0.6rem';
+        btn.appendChild(mark);
+      }
+      btn.addEventListener('click', () => {
+        activeSlotIndex = idx;
+        renderForecastSlot(slots, idx);
+        tabsEl.querySelectorAll('.slot-tab').forEach((t, i) => {
+          t.classList.toggle('active', i === idx);
+          t.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+        });
+      });
+      tabsEl.appendChild(btn);
+    });
+
+    renderForecastSlot(slots, activeSlotIndex);
+
+  } catch (err) {
+    showError(errorEl, `Failed to load forecast: ${err.message}`);
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+function renderForecastSlot(slots, idx) {
+  const slot    = slots[Math.min(idx, slots.length - 1)];
+  const tbody   = document.getElementById('forecast-tbody');
+  const table   = document.getElementById('forecast-table');
+  const infoRow = document.getElementById('slot-info-row');
+
+  tbody.innerHTML = '';
+  const items = slot.items || [];
+  items.forEach(item => {
+    const tr = document.createElement('tr');
+    const modelBadge = item.model_used === 'lightgbm'
+      ? '<span class="badge badge-ai">AI</span>'
+      : '<span class="badge badge-fallback">Fallback</span>';
+
+    tr.innerHTML = `
+      <td><strong>${escHtml(item.name)}</strong></td>
+      <td>${item.predicted}</td>
+      <td>${item.low}–${item.high}</td>
+      <td><span class="cook-now-qty">${item.cook_now}</span></td>
+      <td>${modelBadge}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  table.style.display   = items.length ? '' : 'none';
+  infoRow.style.display = 'flex';
+
+  document.getElementById('slot-info-time').textContent   = fmtTime(slot.slot_time);
+  document.getElementById('slot-info-orders').textContent = slot.order_count ?? '—';
+  document.getElementById('slot-info-cap').textContent    = slot.capacity    ?? '—';
+
+  // Overall model indicator for this slot
+  const hasAI = items.some(i => i.model_used === 'lightgbm');
+  document.getElementById('slot-info-model').textContent = hasAI ? 'LightGBM AI' : 'Fallback averages';
+}
+
+document.getElementById('btn-refresh-forecast').addEventListener('click', () => {
+  activeSlotIndex = 0;
+  loadForecast();
+});
+
+/* ═══════════════════════════════════════════
+   SECTION 2 — LIVE ORDERS
+════════════════════════════════════════════ */
+async function loadOrders() {
+  const spinner  = document.getElementById('orders-spinner');
+  const errorEl  = document.getElementById('orders-error');
+  const grid     = document.getElementById('orders-grid');
+  const empty    = document.getElementById('orders-empty');
+  const countEl  = document.getElementById('orders-count');
+
+  spinner.style.display = 'flex';
+  grid.style.display    = 'none';
+  empty.style.display   = 'none';
+  hideError(errorEl);
+
+  try {
+    const res = await apiFetch('/api/orders');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const orders = await res.json();
+
+    countEl.textContent = orders.length;
+
+    if (!orders.length) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    grid.innerHTML = '';
+    orders.forEach(order => renderOrderCard(grid, order));
+    grid.style.display = 'grid';
+
+  } catch (err) {
+    showError(errorEl, `Failed to load orders: ${err.message}`);
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+function renderOrderCard(container, order) {
+  const statusMap = {
+    pending:   'badge-pending',
+    ready:     'badge-ready',
+    collected: 'badge-collected',
+    cancelled: 'badge-cancelled',
+  };
+  const badgeCls = statusMap[order.status] || 'badge-pending';
+  const status   = order.status || 'pending';
+
+  const card = document.createElement('div');
+  card.className = 'order-card';
+  card.id = `order-card-${order.id}`;
+
+  // Build items HTML
+  const itemsHtml = (order.items || []).map(item => `
+    <div class="order-item-row">
+      <span>${escHtml(item.name || item.item_name || 'Item')}</span>
+      <span>×${item.quantity ?? item.qty ?? 1}</span>
+    </div>
+  `).join('') || '<div class="order-item-row"><span>—</span></div>';
+
+  // Slot time: try slot_time field, fall back to slot_id reference
+  const slotDisplay = order.slot_time ? fmtTime(order.slot_time) : (order.slot_id ? `Slot #${order.slot_id}` : '—');
+
+  card.innerHTML = `
+    <div class="order-card-header">
+      <div>
+        <div class="order-id">#${order.id}</div>
+        <div class="order-student">👤 ${escHtml(order.student_id || order.college_id || 'Student')}</div>
+        <div class="order-slot-time">🕐 Pickup: ${slotDisplay}</div>
+      </div>
+      <span class="badge ${badgeCls}">${status}</span>
+    </div>
+    <div class="order-items">${itemsHtml}</div>
+    <div class="order-actions" id="order-actions-${order.id}"></div>
+  `;
+
+  container.appendChild(card);
+  renderOrderActions(order.id, status);
+}
+
+function renderOrderActions(orderId, currentStatus) {
+  const actionsEl = document.getElementById(`order-actions-${orderId}`);
+  if (!actionsEl) return;
+  actionsEl.innerHTML = '';
+
+  if (currentStatus === 'pending') {
+    const btnReady = document.createElement('button');
+    btnReady.className   = 'btn btn-primary btn-sm';
+    btnReady.textContent = '✓ Mark Ready';
+    btnReady.addEventListener('click', () => updateOrderStatus(orderId, 'ready'));
+    actionsEl.appendChild(btnReady);
+
+    const btnCancel = document.createElement('button');
+    btnCancel.className   = 'btn btn-danger btn-sm';
+    btnCancel.textContent = '✕ Cancel';
+    btnCancel.addEventListener('click', () => updateOrderStatus(orderId, 'cancelled'));
+    actionsEl.appendChild(btnCancel);
+
+  } else if (currentStatus === 'ready') {
+    const btnCollected = document.createElement('button');
+    btnCollected.className   = 'btn btn-success btn-sm';
+    btnCollected.textContent = '✓ Mark Collected';
+    btnCollected.addEventListener('click', () => updateOrderStatus(orderId, 'collected'));
+    actionsEl.appendChild(btnCollected);
+  }
+  // collected / cancelled — no further actions
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  try {
+    const res = await apiFetch(`/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.detail || `Failed to update order #${orderId}`, 'error');
+      return;
+    }
+    const updated = await res.json();
+    // Update card in place
+    const card = document.getElementById(`order-card-${orderId}`);
+    if (card) {
+      const badgeEl = card.querySelector('.badge');
+      const statusMap = { pending:'badge-pending', ready:'badge-ready', collected:'badge-collected', cancelled:'badge-cancelled' };
+      if (badgeEl) {
+        badgeEl.className = `badge ${statusMap[updated.status] || 'badge-pending'}`;
+        badgeEl.textContent = updated.status;
+      }
+      renderOrderActions(orderId, updated.status);
+    }
+    showToast(`Order #${orderId} marked as ${updated.status}`, 'success');
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+  }
+}
+
+// Auto-refresh orders every 30 seconds
+function startOrdersAutoRefresh() {
+  countdownVal = 30;
+  updateCountdown();
+
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    updateCountdown();
+    if (countdownVal <= 0) {
+      countdownVal = 30;
+      loadOrders();
+    }
+  }, 1000);
+}
+
+function updateCountdown() {
+  const el = document.getElementById('countdown');
+  if (el) el.textContent = countdownVal;
+}
+
+document.getElementById('btn-refresh-orders').addEventListener('click', () => {
+  countdownVal = 30;
+  loadOrders();
+});
+
+/* ═══════════════════════════════════════════
+   SECTION 3 — MENU STOCK
+════════════════════════════════════════════ */
+async function loadMenu() {
+  const spinner  = document.getElementById('menu-spinner');
+  const errorEl  = document.getElementById('menu-error');
+  const grid     = document.getElementById('menu-grid');
+
+  spinner.style.display = 'flex';
+  grid.style.display    = 'none';
+  hideError(errorEl);
+
+  try {
+    const res = await apiFetch('/api/menu');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    // Menu returns available items only; we store them and also populate waste dropdown
+    menuItems = await res.json();
+    renderMenuGrid();
+    populateWasteDropdown();
+  } catch (err) {
+    showError(errorEl, `Failed to load menu: ${err.message}`);
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+function renderMenuGrid() {
+  const grid    = document.getElementById('menu-grid');
+  const errorEl = document.getElementById('menu-error');
+  grid.innerHTML = '';
+
+  if (!menuItems.length) {
+    showError(errorEl, 'No menu items found.');
+    return;
+  }
+
+  menuItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = `menu-item-card${item.is_available === false ? ' sold-out' : ''}`;
+    card.id = `menu-card-${item.id}`;
+
+    const isAvail = item.is_available !== false;
+    const switchId = `toggle-${item.id}`;
+
+    card.innerHTML = `
+      <div class="menu-item-info">
+        <div class="menu-item-name" title="${escHtml(item.name)}">${escHtml(item.name)}</div>
+        <div class="menu-item-price">₹${item.price ?? '—'}</div>
+      </div>
+      <span class="menu-avail-badge ${isAvail ? 'avail-yes' : 'avail-no'}" id="avail-badge-${item.id}">
+        ${isAvail ? 'Available' : 'Sold out'}
+      </span>
+      <label class="toggle-switch" title="${isAvail ? 'Mark as sold out' : 'Mark as available'}">
+        <input type="checkbox" id="${switchId}" ${isAvail ? 'checked' : ''}
+               aria-label="${escHtml(item.name)} availability" />
+        <span class="toggle-slider"></span>
+      </label>
+    `;
+
+    grid.appendChild(card);
+
+    const toggle = card.querySelector(`#${switchId}`);
+    toggle.addEventListener('change', () => setItemAvailability(item, toggle.checked));
+  });
+
+  grid.style.display = 'grid';
+}
+
+async function setItemAvailability(item, available) {
+  const badge = document.getElementById(`avail-badge-${item.id}`);
+  const card  = document.getElementById(`menu-card-${item.id}`);
+  const toggle = document.getElementById(`toggle-${item.id}`);
+
+  toggle.disabled = true;
+
+  try {
+    // Use PATCH /api/menu/{id} (staff endpoint for availability)
+    // Backend spec: PATCH /api/orders/{id}/status is for orders.
+    // For menu item availability we call a dedicated endpoint.
+    // If the backend exposes PATCH /api/menu/{id}, use that.
+    // Falling back to a best-effort call:
+    const res = await apiFetch(`/api/menu/${item.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_available: available }),
+    });
+
+    if (!res.ok) {
+      // Revert toggle
+      toggle.checked = !available;
+      const data = await res.json().catch(() => ({}));
+      showToast(data.detail || `Could not update ${item.name}`, 'error');
+      return;
+    }
+
+    // Update local state
+    item.is_available = available;
+    if (badge) {
+      badge.className  = `menu-avail-badge ${available ? 'avail-yes' : 'avail-no'}`;
+      badge.textContent = available ? 'Available' : 'Sold out';
+    }
+    if (card) card.classList.toggle('sold-out', !available);
+    showToast(`${item.name} marked as ${available ? 'available' : 'sold out'}`, 'success');
+
+  } catch (err) {
+    toggle.checked = !available;
+    showToast(`Error: ${err.message}`, 'error');
+  } finally {
+    toggle.disabled = false;
+  }
+}
+
+document.getElementById('btn-refresh-menu').addEventListener('click', loadMenu);
+
+/* ═══════════════════════════════════════════
+   SECTION 4 — WASTE LOG
+════════════════════════════════════════════ */
+function populateWasteDropdown() {
+  const sel = document.getElementById('waste-item');
+  // Keep placeholder, clear the rest
+  while (sel.options.length > 1) sel.remove(1);
+  menuItems.forEach(item => {
+    const opt  = document.createElement('option');
+    opt.value  = item.id;
+    opt.text   = item.name;
+    sel.appendChild(opt);
+  });
+}
+
+// Auto-calculate leftover
+function recalcLeftover() {
+  const prepared = parseInt(document.getElementById('waste-prepared').value, 10) || 0;
+  const sold     = parseInt(document.getElementById('waste-sold').value, 10)     || 0;
+  const leftover = prepared - sold;
+  const display  = document.getElementById('leftover-display');
+  if (document.getElementById('waste-prepared').value === '' &&
+      document.getElementById('waste-sold').value === '') {
+    display.textContent = '—';
+    display.style.color = '';
+  } else {
+    display.textContent = leftover >= 0 ? leftover : '(invalid)';
+    display.style.color = leftover < 0 ? 'var(--accent-red)' : '';
+  }
+}
+
+document.getElementById('waste-prepared').addEventListener('input', recalcLeftover);
+document.getElementById('waste-sold').addEventListener('input', recalcLeftover);
+
+// Set today's date in display
+(function initWasteDate() {
+  const display = document.getElementById('waste-date-display');
+  if (display) display.textContent = todayISO();
+})();
+
+document.getElementById('waste-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('waste-error');
+  const btn     = document.getElementById('waste-submit-btn');
+  hideError(errorEl);
+
+  const menuItemId = parseInt(document.getElementById('waste-item').value, 10);
+  const prepared   = parseInt(document.getElementById('waste-prepared').value, 10);
+  const sold       = parseInt(document.getElementById('waste-sold').value, 10);
+  const leftover   = prepared - sold;
+
+  if (!menuItemId) { showError(errorEl, 'Please select a menu item.'); return; }
+  if (isNaN(prepared) || prepared < 0) { showError(errorEl, 'Enter a valid prepared quantity.'); return; }
+  if (isNaN(sold) || sold < 0) { showError(errorEl, 'Enter a valid sold quantity.'); return; }
+  if (leftover < 0) { showError(errorEl, 'Sold quantity cannot exceed prepared quantity.'); return; }
+
+  btn.disabled    = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await apiFetch('/api/waste', {
+      method: 'POST',
+      body: JSON.stringify({
+        menu_item_id:  menuItemId,
+        date:          todayISO(),
+        prepared_qty:  prepared,
+        sold_qty:      sold,
+        leftover_qty:  leftover,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showError(errorEl, data.detail || 'Failed to log waste. Please try again.');
+      return;
+    }
+
+    showToast('Waste logged successfully! ♻️', 'success');
+    document.getElementById('waste-form').reset();
+    document.getElementById('leftover-display').textContent = '—';
+    document.getElementById('leftover-display').style.color = '';
+
+  } catch (err) {
+    showError(errorEl, `Error: ${err.message}`);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '✓ Log Waste';
+  }
+});
+
+/* ═══════════════════════════════════════════
+   PIN MODAL
+════════════════════════════════════════════ */
+let pinBuffer  = '';
+let pinResolve = null;
+let pinReject  = null;
+
+function openPinModal() {
+  return new Promise((resolve, reject) => {
+    pinBuffer  = '';
+    pinResolve = resolve;
+    pinReject  = reject;
+    updatePinDots();
+    document.getElementById('pin-error').textContent = '';
+    document.getElementById('pin-modal').classList.add('open');
+  });
+}
+
+function closePinModal() {
+  document.getElementById('pin-modal').classList.remove('open');
+  pinBuffer  = '';
+  pinResolve = null;
+  pinReject  = null;
+  updatePinDots();
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`pin-d${i}`);
+    if (dot) dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+document.querySelectorAll('.pin-key[data-digit]').forEach(key => {
+  key.addEventListener('click', () => {
+    if (pinBuffer.length >= 4) return;
+    pinBuffer += key.dataset.digit;
+    updatePinDots();
+
+    if (pinBuffer.length === 4) {
+      // Auto-validate after small delay so last dot renders
+      setTimeout(() => {
+        if (pinBuffer === STAFF_PIN) {
+          closePinModal();
+          if (pinResolve) pinResolve(true);
+        } else {
+          document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+          pinBuffer = '';
+          updatePinDots();
+          // Shake animation
+          const dots = document.querySelector('.pin-display');
+          dots.style.animation = 'none';
+          dots.offsetHeight; // reflow
+          dots.style.animation = 'shake 0.3s ease';
+        }
+      }, 80);
+    }
+  });
+});
+
+document.getElementById('pin-delete').addEventListener('click', () => {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+});
+
+document.getElementById('pin-cancel').addEventListener('click', () => {
+  closePinModal();
+  if (pinReject) pinReject(new Error('Cancelled'));
+});
+
+// Keyboard support for PIN modal
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('pin-modal').classList.contains('open')) return;
+  if (e.key >= '0' && e.key <= '9') {
+    const btn = document.querySelector(`.pin-key[data-digit="${e.key}"]`);
+    if (btn) btn.click();
+  }
+  if (e.key === 'Backspace') document.getElementById('pin-delete').click();
+  if (e.key === 'Escape') document.getElementById('pin-cancel').click();
+});
+
+// Add shake keyframe dynamically
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-6px); }
+    75%      { transform: translateX(6px); }
+  }
+`;
+document.head.appendChild(shakeStyle);
+
+/* ═══════════════════════════════════════════
+   VOICE CONFIRM MODAL
+════════════════════════════════════════════ */
+let confirmResolve = null;
+let confirmReject  = null;
+
+function openConfirmModal(actionText) {
+  return new Promise((resolve, reject) => {
+    confirmResolve = resolve;
+    confirmReject  = reject;
+    document.getElementById('confirm-action-text').textContent = actionText;
+    document.getElementById('confirm-modal').classList.add('open');
+  });
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  confirmResolve = null;
+  confirmReject  = null;
+}
+
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  closeConfirmModal();
+  if (confirmResolve) confirmResolve(true);
+});
+
+document.getElementById('confirm-no').addEventListener('click', () => {
+  closeConfirmModal();
+  if (confirmReject) confirmReject(new Error('Cancelled'));
+});
+
+/* ═══════════════════════════════════════════
+   SECTION 5 — VOICE COMMANDS
+════════════════════════════════════════════ */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+
+if (!SpeechRecognition) {
+  document.getElementById('voice-not-supported').style.display = 'block';
+  document.getElementById('mic-btn').disabled = true;
+} else {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript.trim().toLowerCase();
+    setTranscript(transcript);
+    handleVoiceCommand(transcript);
+  };
+
+  recognition.onerror = (event) => {
+    const msgs = {
+      'no-speech':      'No speech detected — try again.',
+      'audio-capture':  'Microphone not found.',
+      'not-allowed':    'Microphone permission denied.',
+    };
+    setTranscript(msgs[event.error] || `Error: ${event.error}`);
+    stopRecording();
+  };
+
+  recognition.onend = () => { stopRecording(); };
+}
+
+const micBtn = document.getElementById('mic-btn');
+
+micBtn.addEventListener('mousedown',  startRecording);
+micBtn.addEventListener('touchstart', startRecording, { passive: true });
+micBtn.addEventListener('mouseup',    stopRecording);
+micBtn.addEventListener('touchend',   stopRecording);
+micBtn.addEventListener('mouseleave', stopRecording);
+
+function startRecording(e) {
+  if (!recognition || isRecording) return;
+  e.preventDefault();
+  isRecording = true;
+  micBtn.classList.add('recording');
+  micBtn.setAttribute('aria-pressed', 'true');
+  document.getElementById('mic-label').textContent = 'Listening…';
+  setTranscript('');
+  try { recognition.start(); } catch { /* already started */ }
+}
+
+function stopRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  micBtn.classList.remove('recording');
+  micBtn.setAttribute('aria-pressed', 'false');
+  document.getElementById('mic-label').textContent = 'Hold to speak';
+  try { recognition.stop(); } catch { /* already stopped */ }
+}
+
+function setTranscript(text) {
+  const box = document.getElementById('transcript-box');
+  if (!text) {
+    box.innerHTML = '<span class="placeholder">Transcript will appear here…</span>';
+  } else {
+    box.textContent = text;
+  }
+}
+
+/* ── Voice command parser ── */
+async function handleVoiceCommand(transcript) {
+  // Pattern 1: "mark [item] sold out"
+  const markMatch = transcript.match(/^mark\s+(.+?)\s+sold\s+out$/i);
+  if (markMatch) {
+    const itemQuery = markMatch[1].trim();
+    const item = fuzzyFindItem(itemQuery);
+    if (!item) {
+      showToast(`Item not recognised: "${itemQuery}"`, 'error');
+      return;
+    }
+    try {
+      await openConfirmModal(`Mark "${item.name}" as sold out?`);
+      await requirePin();
+      await setItemAvailability(item, false);
+      // Sync toggle state in UI
+      const toggle = document.getElementById(`toggle-${item.id}`);
+      if (toggle) toggle.checked = false;
+    } catch { /* cancelled */ }
+    return;
+  }
+
+  // Pattern 2: "log [qty] leftover [item]"
+  const logMatch = transcript.match(/^log\s+(\d+)\s+leftover\s+(.+)$/i);
+  if (logMatch) {
+    const qty      = parseInt(logMatch[1], 10);
+    const itemQuery = logMatch[2].trim();
+    const item = fuzzyFindItem(itemQuery);
+    if (!item) {
+      showToast(`Item not recognised: "${itemQuery}"`, 'error');
+      return;
+    }
+    try {
+      await openConfirmModal(`Log ${qty} leftover ${item.name}?`);
+      await requirePin();
+      // Pre-fill waste form
+      document.getElementById('waste-item').value = item.id;
+      document.getElementById('waste-sold').value = '';
+      document.getElementById('waste-prepared').value = qty;
+      recalcLeftover();
+      document.getElementById('section-prep-plan').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Scroll to waste section
+      document.getElementById('waste-heading').closest('.card')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast(`Waste form pre-filled: ${item.name} × ${qty}`, 'info');
+    } catch { /* cancelled */ }
+    return;
+  }
+
+  // Pattern 3: "show prep plan"
+  if (/show\s+prep\s+plan/i.test(transcript)) {
+    try {
+      await openConfirmModal('Show prep plan — scroll to prep plan section?');
+      await requirePin();
+      document.getElementById('section-prep-plan')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Scrolled to Prep Plan', 'info');
+    } catch { /* cancelled */ }
+    return;
+  }
+
+  // No match
+  showToast('Command not recognised — please try again or use the touch UI.', 'error');
+}
+
+async function requirePin() {
+  return openPinModal();
+}
+
+function fuzzyFindItem(query) {
+  const q = query.toLowerCase();
+  // Exact match first
+  let match = menuItems.find(i => i.name.toLowerCase() === q);
+  if (match) return match;
+  // Contains match
+  match = menuItems.find(i => i.name.toLowerCase().includes(q) || q.includes(i.name.toLowerCase()));
+  return match || null;
+}
+
+/* ═══════════════════════════════════════════
+   INITIALISE
+════════════════════════════════════════════ */
+async function init() {
+  await Promise.all([
+    loadForecast(),
+    loadOrders(),
+    loadMenu(),
+  ]);
+  startOrdersAutoRefresh();
+}
+
+init();
+</script>
+</body>
+</html>

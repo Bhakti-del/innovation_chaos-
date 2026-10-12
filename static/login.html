@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartCanteen AI — Login</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+      padding: 2.5rem 2.25rem;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* ── Logo / Header ── */
+    .logo-area {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #2e7d32, #1b5e20);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .logo-icon svg {
+      width: 36px;
+      height: 36px;
+      fill: #ffffff;
+    }
+
+    .logo-area h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1b5e20;
+      line-height: 1.2;
+    }
+
+    .logo-area h1 span {
+      color: #2e7d32;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      color: #666;
+      font-style: italic;
+      margin-top: 0.4rem;
+      line-height: 1.4;
+    }
+
+    /* ── Form panel headers ── */
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    /* ── Form elements ── */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 0.35rem;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #222;
+      background: #fafafa;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+      background: #fff;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.7rem;
+      background: linear-gradient(135deg, #2e7d32, #1b5e20);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.92;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ── Error / success messages ── */
+    .msg {
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .msg.error {
+      background: #fdecea;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .msg.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .msg.visible {
+      display: block;
+    }
+
+    /* ── Toggle link ── */
+    .toggle-link {
+      text-align: center;
+      margin-top: 1.1rem;
+      font-size: 0.84rem;
+      color: #555;
+    }
+
+    .toggle-link a {
+      color: #2e7d32;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .toggle-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Demo credentials box ── */
+    .demo-box {
+      margin-top: 1.5rem;
+      border: 1.5px dashed #a5d6a7;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .demo-box summary {
+      padding: 0.55rem 0.9rem;
+      background: #f1f8e9;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #33691e;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      user-select: none;
+    }
+
+    .demo-box summary::-webkit-details-marker { display: none; }
+
+    .demo-box summary::before {
+      content: "▶";
+      font-size: 0.65rem;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .demo-box[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .demo-credentials {
+      padding: 0.75rem 0.9rem;
+      background: #fff;
+    }
+
+    .demo-credentials table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .demo-credentials th {
+      text-align: left;
+      color: #555;
+      font-weight: 600;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .demo-credentials td {
+      padding: 0.35rem 0;
+      color: #333;
+      border-bottom: 1px solid #f5f5f5;
+      vertical-align: middle;
+    }
+
+    .demo-credentials td:first-child {
+      font-family: monospace;
+      color: #1b5e20;
+      font-weight: 600;
+    }
+
+    .demo-credentials .role-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .role-badge.manager  { background: #ede7f6; color: #4527a0; }
+    .role-badge.staff    { background: #e3f2fd; color: #0d47a1; }
+    .role-badge.student  { background: #e8f5e9; color: #1b5e20; }
+
+    .fill-btn {
+      background: none;
+      border: 1px solid #2e7d32;
+      color: #2e7d32;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .fill-btn:hover {
+      background: #2e7d32;
+      color: #fff;
+    }
+
+    /* ── Panels ── */
+    #register-panel { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Logo / Header (always visible) -->
+  <div class="logo-area">
+    <div class="logo-icon" aria-hidden="true">
+      <!-- Simple chef-hat / leaf SVG -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C9.24 2 7 4.24 7 7c0 1.6.73 3.02 1.87 4H6a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6h1a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-2.87C16.27 10.02 17 8.6 17 7c0-2.76-2.24-5-5-5zm0 2c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3z"/>
+      </svg>
+    </div>
+    <h1>Smart<span>Canteen</span> AI</h1>
+    <p class="tagline">"We don't cook more or less. We cook right, and at the right time."</p>
+  </div>
+
+  <!-- ── LOGIN PANEL ── -->
+  <div id="login-panel">
+    <p class="panel-title">Sign in to your account</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label for="login-id">College ID</label>
+        <input type="text" id="login-id" name="username"
+               placeholder="e.g. student1" autocomplete="username" required />
+      </div>
+
+      <div class="form-group">
+        <label for="login-pw">Password</label>
+        <input type="password" id="login-pw" name="password"
+               placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+
+      <button type="submit" class="btn-primary" id="login-btn">Login</button>
+
+      <div class="msg error" id="login-error" role="alert"></div>
+    </form>
+
+    <div class="toggle-link">
+      New here? <a id="show-register">Create an account</a>
+    </div>
+  </div>
+
+  <!-- ── REGISTER PANEL ── -->
+  <div id="register-panel">
+    <p class="panel-title">Create a student account</p>
+
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label for="reg-id">College ID</label>
+        <input type="text" id="reg-id" name="username"
+               placeholder="e.g. student42" autocomplete="username" required />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-pw">Password</label>
+        <input type="password" id="reg-pw" name="password"
+               placeholder="••••••••" autocomplete="new-password" required />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-confirm">Confirm Password</label>
+        <input type="password" id="reg-confirm" name="confirm_password"
+               placeholder="••••••••" autocomplete="new-password" required />
+      </div>
+
+      <button type="submit" class="btn-primary" id="reg-btn">Register</button>
+
+      <div class="msg error"   id="reg-error"   role="alert"></div>
+      <div class="msg success" id="reg-success" role="status"></div>
+    </form>
+
+    <div class="toggle-link">
+      Already have an account? <a id="show-login">Sign in</a>
+    </div>
+  </div>
+
+  <!-- ── DEMO CREDENTIALS ── -->
+  <details class="demo-box">
+    <summary>🔑 Demo credentials</summary>
+    <div class="demo-credentials">
+      <table>
+        <thead>
+          <tr>
+            <th>College ID</th>
+            <th>Password</th>
+            <th>Role</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>admin</td>
+            <td>admin123</td>
+            <td><span class="role-badge manager">manager</span></td>
+            <td><button class="fill-btn" data-user="admin" data-pass="admin123">Fill</button></td>
+          </tr>
+          <tr>
+            <td>staff1</td>
+            <td>staff123</td>
+            <td><span class="role-badge staff">staff</span></td>
+            <td><button class="fill-btn" data-user="staff1" data-pass="staff123">Fill</button></td>
+          </tr>
+          <tr>
+            <td>student1</td>
+            <td>student123</td>
+            <td><span class="role-badge student">student</span></td>
+            <td><button class="fill-btn" data-user="student1" data-pass="student123">Fill</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+</div><!-- /.card -->
+
+<script>
+  /* ─────────────────────────────────────────────
+     Helpers
+  ───────────────────────────────────────────── */
+  function showMsg(el, text) {
+    el.textContent = text;
+    el.classList.add('visible');
+  }
+  function hideMsg(el) {
+    el.textContent = '';
+    el.classList.remove('visible');
+  }
+
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait…' : btn.dataset.label;
+  }
+
+  // Save label once for each button
+  document.querySelectorAll('.btn-primary').forEach(b => {
+    b.dataset.label = b.textContent;
+  });
+
+  /* ─────────────────────────────────────────────
+     Panel toggle
+  ───────────────────────────────────────────── */
+  const loginPanel    = document.getElementById('login-panel');
+  const registerPanel = document.getElementById('register-panel');
+
+  document.getElementById('show-register').addEventListener('click', () => {
+    loginPanel.style.display    = 'none';
+    registerPanel.style.display = 'block';
+    hideMsg(document.getElementById('login-error'));
+  });
+
+  document.getElementById('show-login').addEventListener('click', () => {
+    registerPanel.style.display = 'none';
+    loginPanel.style.display    = 'block';
+    hideMsg(document.getElementById('reg-error'));
+    hideMsg(document.getElementById('reg-success'));
+  });
+
+  /* ─────────────────────────────────────────────
+     Role → page redirect
+  ───────────────────────────────────────────── */
+  function redirectForRole(role) {
+    const map = {
+      student: 'student.html',
+      staff:   'staff.html',
+      manager: 'manager.html',
+    };
+    const dest = map[role] || 'student.html';
+    window.location.href = dest;
+  }
+
+  /* ─────────────────────────────────────────────
+     Login
+  ───────────────────────────────────────────── */
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    hideMsg(errEl);
+
+    const username = document.getElementById('login-id').value.trim();
+    const password = document.getElementById('login-pw').value;
+
+    if (!username || !password) {
+      showMsg(errEl, 'Please enter your College ID and password.');
+      return;
+    }
+
+    setLoading(btn, true);
+    try {
+      const body = new URLSearchParams({ username, password });
+      const res  = await fetch('/auth/token', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString(),
+      });
+
+      if (!res.ok) {
+        showMsg(errEl, 'Invalid college ID or password.');
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('role', data.role);
+      redirectForRole(data.role);
+
+    } catch (err) {
+      showMsg(errEl, 'Unable to reach the server. Please try again.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  /* ─────────────────────────────────────────────
+     Register
+  ───────────────────────────────────────────── */
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl     = document.getElementById('reg-error');
+    const successEl = document.getElementById('reg-success');
+    const btn       = document.getElementById('reg-btn');
+    hideMsg(errEl);
+    hideMsg(successEl);
+
+    const username        = document.getElementById('reg-id').value.trim();
+    const password        = document.getElementById('reg-pw').value;
+    const confirmPassword = document.getElementById('reg-confirm').value;
+
+    if (!username || !password || !confirmPassword) {
+      showMsg(errEl, 'All fields are required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showMsg(errEl, 'Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      showMsg(errEl, 'Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(btn, true);
+    try {
+      // Register
+      const regRes = await fetch('/auth/register', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password, role: 'student' }),
+      });
+
+      if (!regRes.ok) {
+        let detail = 'Registration failed. College ID may already be taken.';
+        try {
+          const errData = await regRes.json();
+          if (errData.detail) detail = errData.detail;
+        } catch (_) { /* ignore parse error */ }
+        showMsg(errEl, detail);
+        return;
+      }
+
+      showMsg(successEl, 'Account created! Logging you in…');
+
+      // Auto-login
+      const loginBody = new URLSearchParams({ username, password });
+      const loginRes  = await fetch('/auth/token', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    loginBody.toString(),
+      });
+
+      if (!loginRes.ok) {
+        // Registration worked but login failed — send to login panel
+        hideMsg(successEl);
+        registerPanel.style.display = 'none';
+        loginPanel.style.display    = 'block';
+        document.getElementById('login-id').value = username;
+        showMsg(document.getElementById('login-error'),
+          'Account created. Please sign in.');
+        return;
+      }
+
+      const data = await loginRes.json();
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('role', data.role);
+      redirectForRole(data.role);
+
+    } catch (err) {
+      showMsg(errEl, 'Unable to reach the server. Please try again.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  /* ─────────────────────────────────────────────
+     Demo credentials — fill buttons
+  ───────────────────────────────────────────── */
+  document.querySelectorAll('.fill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Make sure login panel is shown
+      registerPanel.style.display = 'none';
+      loginPanel.style.display    = 'block';
+
+      document.getElementById('login-id').value = btn.dataset.user;
+      document.getElementById('login-pw').value = btn.dataset.pass;
+      hideMsg(document.getElementById('login-error'));
+    });
+  });
+
+  /* ─────────────────────────────────────────────
+     If already logged in, redirect immediately
+  ───────────────────────────────────────────── */
+  (function checkExistingSession() {
+    const token = localStorage.getItem('access_token');
+    const role  = localStorage.getItem('role');
+    if (token && role) {
+      redirectForRole(role);
+    }
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartCanteen AI — Manager</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<nav>
+  <span class="brand">🍽 SmartCanteen AI — Manager</span>
+  <div class="nav-right">
+    <span id="nav-user"></span>
+    <button class="logout-btn" onclick="API.logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Stats row -->
+  <div class="stat-row" id="stat-row">
+    <div class="stat-box"><div class="stat-val" id="stat-orders">—</div><div class="stat-label">Orders today</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-waste">—</div><div class="stat-label">Waste rate</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-items">—</div><div class="stat-label">Menu items</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-ai">—</div><div class="stat-label">AI status</div></div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Left column -->
+    <div>
+
+      <!-- AI toggle + settings -->
+      <div class="card">
+        <h2>⚙️ Settings</h2>
+        <div id="settings-content"><div class="spinner"></div></div>
+        <div class="msg error" id="settings-error"></div>
+        <div class="msg success" id="settings-success"></div>
+      </div>
+
+      <!-- Forecast / Prep plan -->
+      <div class="card">
+        <h2>🍳 Prep Plan</h2>
+        <div id="prep-plan-content"><div class="spinner"></div></div>
+        <div style="display:flex;gap:0.6rem;margin-top:0.75rem;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="loadForecast()">↻ Refresh</button>
+          <button class="btn btn-green btn-sm" onclick="triggerRetrain()">Retrain Model</button>
+        </div>
+        <div class="msg info" id="retrain-msg"></div>
+      </div>
+
+      <!-- Waste log form -->
+      <div class="card">
+        <h2>🗑 Log Waste</h2>
+        <form id="waste-form">
+          <div class="form-group">
+            <label for="waste-item">Item</label>
+            <select id="waste-item"></select>
+          </div>
+          <div class="form-group">
+            <label for="waste-date">Date</label>
+            <input type="date" id="waste-date" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;">
+            <div class="form-group"><label>Prepared</label><input type="number" id="waste-prepared" min="0" placeholder="0" /></div>
+            <div class="form-group"><label>Sold</label><input type="number" id="waste-sold" min="0" placeholder="0" /></div>
+            <div class="form-group"><label>Leftover</label><input type="number" id="waste-leftover" min="0" placeholder="0" /></div>
+          </div>
+          <button type="submit" class="btn btn-green btn-full">Log Waste</button>
+          <div class="msg error" id="waste-error"></div>
+          <div class="msg success" id="waste-success"></div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Right column -->
+    <div>
+
+      <!-- Waste dashboard -->
+      <div class="card">
+        <h2>📊 Waste Dashboard</h2>
+        <div id="waste-summary"><div class="spinner"></div></div>
+        <button class="btn btn-outline btn-sm" style="margin-top:0.75rem;" onclick="loadWasteSummary()">↻ Refresh</button>
+      </div>
+
+      <!-- All orders -->
+      <div class="card">
+        <h2>📋 All Orders</h2>
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="loadOrders('pending')">Pending</button>
+          <button class="btn btn-outline btn-sm" onclick="loadOrders('ready')">Ready</button>
+          <button class="btn btn-outline btn-sm" onclick="loadOrders()">All</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>User</th><th>Slot</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="orders-body"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Audit log -->
+      <div class="card">
+        <h2>🔍 Audit Log</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+            <tbody id="audit-body"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;">
+          <button class="btn btn-outline btn-sm" onclick="loadAudit(auditPage-1)">← Prev</button>
+          <span id="audit-page-info" style="font-size:0.82rem;color:var(--muted);"></span>
+          <button class="btn btn-outline btn-sm" onclick="loadAudit(auditPage+1)">Next →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/api.js"></script>
+<script>
+API.requireRole('manager');
+document.getElementById('nav-user').textContent = API.userId() || '';
+document.getElementById('waste-date').value = new Date().toISOString().slice(0,10);
+
+let auditPage = 1;
+let auditPages = 1;
+let menuItems = [];
+
+/* ── Menu ── */
+async function loadMenu() {
+  try {
+    menuItems = await API.get('/api/menu');
+    const opts = menuItems.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+    document.getElementById('waste-item').innerHTML = opts;
+    document.getElementById('stat-items').textContent = menuItems.length;
+  } catch(e) {}
+}
+
+/* ── Settings ── */
+async function loadSettings() {
+  const el = document.getElementById('settings-content');
+  try {
+    const data = await API.get('/api/settings');
+    const rows = data.settings.map(s => {
+      if (s.key === 'ai_enabled') {
+        const checked = s.value === 'true' ? 'checked' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f0f0f0;">
+          <div>
+            <div style="font-weight:600;font-size:0.9rem;">AI Forecasting</div>
+            <div style="font-size:0.78rem;color:var(--muted);">Toggle between LightGBM and rolling-average fallback</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="ai-toggle" ${checked} onchange="updateSetting('ai_enabled', this.checked?'true':'false')" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>`;
+      }
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f0f0f0;">
+        <div>
+          <div style="font-weight:600;font-size:0.88rem;">${s.key}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">Updated: ${s.updated_at ? new Date(s.updated_at).toLocaleString('en-IN') : '—'}</div>
+        </div>
+        <input type="text" value="${s.value}" style="width:120px;font-size:0.88rem;"
+          onchange="updateSetting('${s.key}', this.value)" />
+      </div>`;
+    }).join('');
+    el.innerHTML = rows || '<div class="empty">No settings found.</div>';
+
+    // Update AI stat
+    const aiRow = data.settings.find(s => s.key === 'ai_enabled');
+    document.getElementById('stat-ai').textContent = aiRow && aiRow.value === 'true' ? '✅ On' : '⛔ Off';
+  } catch(e) {
+    el.innerHTML = `<div class="msg error visible">${e.message}</div>`;
+  }
+}
+
+async function updateSetting(key, value) {
+  const errEl = document.getElementById('settings-error');
+  const sucEl = document.getElementById('settings-success');
+  errEl.classList.remove('visible'); sucEl.classList.remove('visible');
+  try {
+    await API.patch(`/api/settings/${key}`, { value });
+    showMsg(sucEl, `Setting "${key}" updated to "${value}"`);
+    loadSettings();
+    loadForecast();
+  } catch(e) { showMsg(errEl, e.message); }
+}
+
+/* ── Forecast ── */
+async function loadForecast() {
+  const el = document.getElementById('prep-plan-content');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await API.get('/api/forecast');
+    if (!data.slots || !data.slots.length) { el.innerHTML = '<div class="empty">No upcoming slots.</div>'; return; }
+    el.innerHTML = data.slots.map(slot => {
+      const time = new Date(slot.slot_time).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      if (slot.error) return `<div class="forecast-slot"><h3>${time}</h3><div class="msg error visible">${slot.error}</div></div>`;
+      const rows = slot.items.map(item => {
+        const pct = Math.min(100, Math.round((item.predicted / (item.high || 1)) * 100));
+        return `<div class="forecast-row">
+          <span class="forecast-item-name">${item.name}</span>
+          <div class="forecast-bar-wrap"><div class="forecast-bar" style="width:${pct}%"></div></div>
+          <span class="forecast-nums">${item.low}–${item.high}</span>
+          <span class="cook-now">Cook ${item.cook_now}</span>
+          <span class="badge badge-${item.model_used === 'lightgbm' ? 'green' : 'blue'}" style="font-size:0.68rem;">${item.model_used}</span>
+        </div>`;
+      }).join('');
+      return `<div class="forecast-slot"><h3>${time} · ${slot.order_count}/${slot.capacity} orders</h3>${rows}</div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="msg error visible">${e.message}</div>`;
+  }
+}
+
+async function triggerRetrain() {
+  const msgEl = document.getElementById('retrain-msg');
+  try {
+    const res = await API.post('/api/forecast/retrain');
+    showMsg(msgEl, `✅ ${res.message}`);
+  } catch(e) { showMsg(msgEl, `❌ ${e.message}`); }
+}
+
+/* ── Waste summary ── */
+async function loadWasteSummary() {
+  const el = document.getElementById('waste-summary');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await API.get('/api/waste/summary');
+
+    // Per-item table
+    const itemRows = data.per_item.map(r => {
+      const color = r.waste_rate_pct > 15 ? 'var(--red)' : r.waste_rate_pct > 8 ? '#f57f17' : 'var(--green-dark)';
+      return `<tr>
+        <td>${r.item_name}</td>
+        <td>${r.total_prepared}</td>
+        <td>${r.total_leftover}</td>
+        <td style="font-weight:700;color:${color};">${r.waste_rate_pct}%</td>
+      </tr>`;
+    }).join('');
+
+    // Per-day mini chart (bar using CSS)
+    const maxWaste = Math.max(...data.per_day.map(d => d.total_leftover), 1);
+    const dayBars = data.per_day.slice(-7).map(d => {
+      const pct = Math.round((d.total_leftover / maxWaste) * 100);
+      const color = d.waste_rate_pct > 15 ? '#e53935' : d.waste_rate_pct > 8 ? '#fb8c00' : '#2e7d32';
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;flex:1;">
+        <div style="width:100%;background:#f0f0f0;border-radius:4px;height:60px;display:flex;align-items:flex-end;">
+          <div style="width:100%;height:${pct}%;background:${color};border-radius:4px;transition:height 0.4s;"></div>
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted);text-align:center;">${d.date.slice(5)}</div>
+        <div style="font-size:0.7rem;font-weight:700;color:${color};">${d.waste_rate_pct}%</div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:flex-end;min-height:80px;">
+        ${dayBars || '<div class="empty">No data yet.</div>'}
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>Prepared</th><th>Leftover</th><th>Waste %</th></tr></thead>
+          <tbody>${itemRows || '<tr><td colspan="4" class="empty">No waste logs yet.</td></tr>'}</tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="msg error visible">${e.message}</div>`;
+  }
+}
+
+/* ── Waste form ── */
+document.getElementById('waste-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('waste-error');
+  const sucEl = document.getElementById('waste-success');
+  errEl.classList.remove('visible'); sucEl.classList.remove('visible');
+  const payload = {
+    menu_item_id: parseInt(document.getElementById('waste-item').value),
+    date:         document.getElementById('waste-date').value,
+    prepared_qty: parseInt(document.getElementById('waste-prepared').value) || 0,
+    sold_qty:     parseInt(document.getElementById('waste-sold').value) || 0,
+    leftover_qty: parseInt(document.getElementById('waste-leftover').value) || 0,
+  };
+  try {
+    const res = await API.post('/api/waste', payload);
+    showMsg(sucEl, `Logged: ${res.leftover_qty} leftover ${res.item_name} on ${res.date}`);
+    e.target.reset();
+    document.getElementById('waste-date').value = new Date().toISOString().slice(0,10);
+    loadWasteSummary();
+  } catch(e2) { showMsg(errEl, e2.message); }
+});
+
+/* ── Orders ── */
+async function loadOrders(filterStatus) {
+  const tbody = document.getElementById('orders-body');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty"><span class="spinner"></span></td></tr>';
+  try {
+    let orders = await API.get('/api/orders');
+    if (filterStatus) orders = orders.filter(o => o.status === filterStatus);
+
+    // Stats
+    const today = new Date().toISOString().slice(0,10);
+    const todayOrders = orders.filter(o => o.created_at && o.created_at.startsWith(today));
+    document.getElementById('stat-orders').textContent = todayOrders.length;
+
+    if (!orders.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No orders.</td></tr>'; return; }
+    tbody.innerHTML = orders.slice(0,50).map(o => {
+      const time = o.slot_time ? new Date(o.slot_time).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '—';
+      const actions = _orderActions(o);
+      return `<tr>
+        <td>#${o.id}</td>
+        <td style="font-size:0.8rem;">${o.user_id}</td>
+        <td>${time}</td>
+        <td>₹${o.total_price.toFixed(2)}</td>
+        <td><span class="badge badge-${o.status}">${o.status}</span></td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" class="msg error visible">${e.message}</td></tr>`;
+  }
+}
+
+function _orderActions(o) {
+  if (o.status === 'pending')
+    return `<button class="btn btn-green btn-sm" onclick="updateStatus(${o.id},'ready')">Ready</button>`;
+  if (o.status === 'ready')
+    return `<button class="btn btn-green btn-sm" onclick="updateStatus(${o.id},'collected')">Collected</button>`;
+  return '';
+}
+
+async function updateStatus(orderId, newStatus) {
+  try {
+    await API.patch(`/api/orders/${orderId}/status`, { status: newStatus });
+    loadOrders();
+  } catch(e) { alert(e.message); }
+}
+
+/* ── Audit log ── */
+async function loadAudit(page) {
+  page = Math.max(1, Math.min(page, auditPages));
+  auditPage = page;
+  const tbody = document.getElementById('audit-body');
+  tbody.innerHTML = '<tr><td colspan="4" class="empty"><span class="spinner"></span></td></tr>';
+  try {
+    const data = await API.get(`/api/audit?page=${page}&page_size=15`);
+    auditPages = data.pages;
+    document.getElementById('audit-page-info').textContent = `Page ${data.page} of ${data.pages} (${data.total} entries)`;
+    if (!data.entries.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">No audit entries.</td></tr>'; return; }
+    tbody.innerHTML = data.entries.map(e => {
+      const time = new Date(e.created_at).toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+      let details = '';
+      try { const d = JSON.parse(e.details || '{}'); details = Object.entries(d).map(([k,v])=>`${k}: ${v}`).join(', '); } catch(_) { details = e.details || ''; }
+      return `<tr>
+        <td style="font-size:0.78rem;white-space:nowrap;">${time}</td>
+        <td style="font-size:0.8rem;">${e.college_id || e.user_id}</td>
+        <td><span class="badge badge-blue" style="font-size:0.7rem;">${e.action}</span></td>
+        <td style="font-size:0.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${details}">${details}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4" class="msg error visible">${e.message}</td></tr>`;
+  }
+}
+
+/* ── Helpers ── */
+function showMsg(el, text) { el.textContent = text; el.classList.add('visible'); }
+
+/* ── Init ── */
+loadMenu();
+loadSettings();
+loadForecast();
+loadWasteSummary();
+loadOrders();
+loadAudit(1);
+</script>
+</body>
+</html>

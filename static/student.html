@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartCanteen AI — Order</title>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design tokens ── */
+    :root {
+      --green:        #2e7d32;
+      --green-dark:   #1b5e20;
+      --green-light:  #e8f5e9;
+      --amber:        #f57c00;
+      --amber-light:  #fff3e0;
+      --red:          #c62828;
+      --red-light:    #fdecea;
+      --blue:         #1565c0;
+      --blue-light:   #e3f2fd;
+      --grey:         #757575;
+      --grey-light:   #f5f5f5;
+      --border:       #e0e0e0;
+      --shadow:       0 2px 12px rgba(0,0,0,.10);
+      --radius:       12px;
+      --font:         'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: #f8f9fa;
+      color: #222;
+      min-height: 100vh;
+      padding-bottom: 6rem; /* room for FAB */
+    }
+
+    /* ── Top nav bar ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--green);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 1.25rem;
+      height: 56px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .topbar-logo svg {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+    }
+
+    .topbar-logo span { white-space: nowrap; }
+
+    /* wait-time chip */
+    .wait-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 0.25rem 0.65rem;
+      white-space: nowrap;
+      transition: background .25s;
+    }
+
+    .wait-chip.warn { background: var(--amber); color: #fff; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .college-id {
+      font-size: 0.82rem;
+      font-weight: 600;
+      opacity: .9;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.28rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.28); }
+
+    /* ── Section nav tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: sticky;
+      top: 56px;
+      z-index: 99;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 0.7rem 1.1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--grey);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--green); }
+    .tab-btn.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    /* ── Main content ── */
+    .main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem; }
+
+    /* Sections hidden by default, shown via JS */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 1rem;
+    }
+
+    /* ── Generic card ── */
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    /* ── Menu grid ── */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1rem;
+    }
+
+    .menu-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border: 2px solid transparent;
+      transition: border-color .15s, transform .1s;
+    }
+    .menu-card:hover { border-color: var(--green); transform: translateY(-2px); }
+    .menu-card.unavailable {
+      opacity: .48;
+      filter: grayscale(.6);
+      pointer-events: none;
+    }
+
+    .menu-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+
+    .menu-item-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #222;
+      line-height: 1.3;
+    }
+
+    .menu-item-price {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--green);
+      white-space: nowrap;
+    }
+
+    .menu-item-desc {
+      font-size: 0.78rem;
+      color: #666;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .menu-category-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      align-self: flex-start;
+    }
+
+    .menu-card-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .stepper-btn {
+      width: 30px;
+      height: 30px;
+      background: var(--grey-light);
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .1s;
+      flex-shrink: 0;
+    }
+    .stepper-btn:hover { background: #e0e0e0; }
+    .stepper-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .stepper-val {
+      width: 32px;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #333;
+      border: none;
+      outline: none;
+      background: #fff;
+    }
+
+    .btn-add {
+      flex: 1;
+      padding: 0.45rem 0.7rem;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-add:hover { opacity: .88; }
+    .btn-add:active { transform: scale(.97); }
+    .btn-add:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Category filter ── */
+    .cat-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .cat-chip {
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #fff;
+      color: #555;
+      transition: all .15s;
+    }
+    .cat-chip:hover, .cat-chip.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    /* ── Slot picker ── */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .slot-card {
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      border: 2px solid transparent;
+      cursor: pointer;
+      text-align: center;
+      transition: transform .1s, border-color .15s;
+      user-select: none;
+    }
+    .slot-card:hover { transform: translateY(-2px); }
+
+    .slot-card.green  { background: #e8f5e9; border-color: #a5d6a7; }
+    .slot-card.amber  { background: var(--amber-light); border-color: #ffcc80; }
+    .slot-card.red    { background: var(--red-light); border-color: #ef9a9a; }
+    .slot-card.full   { opacity: .42; cursor: not-allowed; pointer-events: none; }
+
+    .slot-card.selected {
+      border-color: var(--green-dark) !important;
+      box-shadow: 0 0 0 3px rgba(46,125,50,.25);
+    }
+
+    .slot-time {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .slot-avail {
+      font-size: 0.72rem;
+      margin-top: 0.25rem;
+      font-weight: 600;
+    }
+    .slot-card.green .slot-avail  { color: var(--green-dark); }
+    .slot-card.amber .slot-avail  { color: #e65100; }
+    .slot-card.red   .slot-avail  { color: var(--red); }
+
+    .slot-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .slot-card.green .slot-dot  { background: var(--green); }
+    .slot-card.amber .slot-dot  { background: var(--amber); }
+    .slot-card.red   .slot-dot  { background: var(--red); }
+
+    /* Wait banner */
+    .wait-banner {
+      margin-top: 1rem;
+      background: #fffde7;
+      border: 1.5px solid #ffd54f;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: #e65100;
+      display: none;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+    .wait-banner.visible { display: flex; }
+    .wait-banner .suggest-link {
+      color: var(--green-dark);
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── Order summary ── */
+    .order-empty {
+      text-align: center;
+      color: #999;
+      padding: 1.5rem;
+      font-size: 0.88rem;
+    }
+
+    .summary-items {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      padding: 0.6rem 0.9rem;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row-name { flex: 1; font-weight: 600; color: #333; }
+    .summary-row-qty  { color: #555; }
+    .summary-row-price { font-weight: 700; color: var(--green); }
+    .summary-row-del {
+      background: none;
+      border: none;
+      color: #bbb;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0.1rem 0.2rem;
+      transition: color .15s;
+    }
+    .summary-row-del:hover { color: var(--red); }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0.5rem 0;
+      color: #222;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-slot-info {
+      font-size: 0.84rem;
+      color: #666;
+      margin-bottom: 0.9rem;
+    }
+    .summary-slot-info strong { color: var(--green-dark); }
+
+    .btn-place-order {
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-place-order:hover { opacity: .90; }
+    .btn-place-order:active { transform: scale(.98); }
+    .btn-place-order:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── My Orders table ── */
+    .orders-table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 0.85rem;
+    }
+
+    .orders-table th {
+      text-align: left;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #555;
+      background: #fafafa;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .orders-table td {
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: #333;
+    }
+
+    .orders-table tr:last-child td { border-bottom: none; }
+    .orders-table tr:hover td { background: #f9f9f9; }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .status-badge.pending   { background: #eeeeee; color: #555; }
+    .status-badge.ready     { background: var(--green-light); color: var(--green-dark); }
+    .status-badge.collected { background: var(--blue-light);  color: var(--blue); }
+    .status-badge.cancelled { background: var(--red-light);   color: var(--red); }
+
+    .orders-empty {
+      text-align: center;
+      color: #aaa;
+      padding: 2rem;
+      font-size: 0.88rem;
+    }
+
+    /* ── Refresh button ── */
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: none;
+      border: 1.5px solid var(--green);
+      color: var(--green);
+      border-radius: 8px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      margin-bottom: 0.9rem;
+    }
+    .btn-refresh:hover { background: var(--green-light); }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-row {
+      text-align: center;
+      padding: 2rem;
+      color: #aaa;
+      font-size: 0.88rem;
+    }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #323232;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 320px;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: var(--red); }
+    .toast.success { background: var(--green-dark); }
+    .toast.warn { background: var(--amber); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.75rem 1.5rem;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      transform: translateY(20px);
+      transition: transform .2s;
+    }
+    .modal-backdrop.open .modal { transform: translateY(0); }
+
+    .modal-icon {
+      width: 56px; height: 56px;
+      background: var(--green-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .modal-icon svg { width: 30px; height: 30px; fill: var(--green); }
+
+    .modal h2 {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-detail {
+      font-size: 0.85rem;
+      color: #555;
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+    .modal-detail strong { color: var(--green-dark); }
+
+    .modal-order-id {
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: .05em;
+      margin: 0.75rem 0;
+    }
+
+    .btn-modal-close {
+      display: block;
+      width: 100%;
+      margin-top: 1.2rem;
+      padding: 0.7rem;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-modal-close:hover { opacity: .88; }
+
+    /* Voice confirm modal extras */
+    .voice-transcript {
+      background: var(--grey-light);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.88rem;
+      color: #444;
+      margin: 0.75rem 0;
+      font-style: italic;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+    .modal-actions button {
+      flex: 1;
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: opacity .15s;
+    }
+    .modal-actions button:hover { opacity: .88; }
+    .btn-confirm { background: var(--green); color: #fff; }
+    .btn-cancel-modal { background: var(--grey-light); color: #555; }
+
+    /* ── Voice FAB ── */
+    .voice-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .voice-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .voice-fab:hover .voice-label,
+    .voice-btn.listening + .voice-label { opacity: 1; }
+
+    .voice-btn {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(46,125,50,.5);
+      transition: transform .1s, box-shadow .2s;
+      touch-action: none;
+      outline: none;
+    }
+    .voice-btn:hover { transform: scale(1.06); }
+    .voice-btn.listening {
+      background: linear-gradient(135deg, #c62828, #b71c1c);
+      box-shadow: 0 0 0 8px rgba(198,40,40,.25), 0 4px 16px rgba(198,40,40,.4);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .voice-btn svg { width: 26px; height: 26px; fill: #fff; }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0px rgba(198,40,40,.4), 0 4px 16px rgba(198,40,40,.4); }
+      50%       { box-shadow: 0 0 0 12px rgba(198,40,40,.0), 0 4px 16px rgba(198,40,40,.4); }
+    }
+
+    /* ── Responsive tweaks ── */
+    @media (max-width: 540px) {
+      .topbar-logo span { font-size: 0.95rem; }
+      .college-id { max-width: 72px; }
+      .slots-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP BAR ══════════════════ -->
+<header class="topbar" role="banner">
+  <div class="topbar-logo" aria-label="SmartCanteen AI">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2C9.24 2 7 4.24 7 7c0 1.6.73 3.02 1.87 4H6a1 1 0 0 0-1 1v1a1
+               1 0 0 0 1 1h1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6h1a1 1 0 0 0
+               1-1v-1a1 1 0 0 0-1-1h-2.87C16.27 10.02 17 8.6 17 7c0-2.76-2.24-5-5-5zm0
+               2c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3z"/>
+    </svg>
+    <span>SmartCanteen AI</span>
+  </div>
+
+  <!-- Live wait chip (updates when a slot is selected) -->
+  <div class="wait-chip" id="wait-chip" role="status" aria-live="polite" aria-label="Estimated wait time">
+    ⏱ Select a slot
+  </div>
+
+  <div class="topbar-right">
+    <span class="college-id" id="display-college-id" aria-label="Logged in as"></span>
+    <button class="btn-logout" id="btn-logout" aria-label="Logout">Logout</button>
+  </div>
+</header>
+
+<!-- ══════════════════ TAB BAR ══════════════════ -->
+<nav class="tab-bar" role="navigation" aria-label="Page sections">
+  <button class="tab-btn active" data-section="menu">🍽 Menu</button>
+  <button class="tab-btn" data-section="slots">🕐 Pick Slot</button>
+  <button class="tab-btn" data-section="summary">🛒 Order Summary <span id="cart-count" style="display:none;background:var(--amber);color:#fff;border-radius:12px;font-size:.7rem;padding:.05rem .4rem;vertical-align:middle;font-weight:700;"></span></button>
+  <button class="tab-btn" data-section="myorders">📋 My Orders</button>
+</nav>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main" role="main">
+
+  <!-- ─── SECTION: MENU ─── -->
+  <section id="sec-menu" class="section active" aria-label="Menu">
+    <h2 class="section-title">Today's Menu</h2>
+
+    <div class="cat-filter" id="cat-filter" role="group" aria-label="Filter by category">
+      <button class="cat-chip active" data-cat="all">All</button>
+    </div>
+
+    <div class="menu-grid" id="menu-grid" aria-live="polite">
+      <div class="loading-row" colspan="4"><span class="spinner" aria-label="Loading"></span> Loading menu…</div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION: SLOT PICKER ─── -->
+  <section id="sec-slots" class="section" aria-label="Pick pickup slot">
+    <h2 class="section-title">Pick Your Pickup Slot</h2>
+    <p style="font-size:.82rem;color:#888;margin-bottom:.9rem;">
+      <span class="slot-dot" style="background:var(--green);"></span>Green — plenty of space &nbsp;
+      <span class="slot-dot" style="background:var(--amber);"></span>Amber — filling up &nbsp;
+      <span class="slot-dot" style="background:var(--red);"></span>Red — almost full
+    </p>
+
+    <div class="slots-grid" id="slots-grid" aria-live="polite" role="listbox" aria-label="Available pickup slots">
+      <div class="loading-row"><span class="spinner" aria-label="Loading"></span> Loading slots…</div>
+    </div>
+
+    <!-- Wait-time warning banner -->
+    <div class="wait-banner" id="wait-banner" role="alert" aria-live="assertive">
+      <span style="font-size:1.1rem;">⚠</span>
+      <span id="wait-banner-text"></span>
+    </div>
+  </section>
+
+  <!-- ─── SECTION: ORDER SUMMARY ─── -->
+  <section id="sec-summary" class="section" aria-label="Order summary">
+    <h2 class="section-title">Order Summary</h2>
+
+    <div class="card" id="summary-card">
+      <div class="order-empty" id="summary-empty">
+        Your cart is empty. Add items from the menu first.
+      </div>
+
+      <div id="summary-content" style="display:none;">
+        <div class="summary-slot-info" id="summary-slot-info"></div>
+        <div class="summary-items" id="summary-items"></div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span id="summary-total-price">₹0.00</span>
+        </div>
+        <button class="btn-place-order" id="btn-place-order">
+          Place Order
+        </button>
+        <div id="place-order-err" style="display:none;margin-top:.6rem;font-size:.83rem;color:var(--red);background:var(--red-light);border:1px solid #ef9a9a;border-radius:8px;padding:.5rem .8rem;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION: MY ORDERS ─── -->
+  <section id="sec-myorders" class="section" aria-label="My orders">
+    <h2 class="section-title">My Orders</h2>
+    <button class="btn-refresh" id="btn-refresh-orders" aria-label="Refresh orders">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      Refresh
+    </button>
+
+    <div class="orders-table-wrap" id="orders-wrap">
+      <div class="loading-row"><span class="spinner" aria-label="Loading"></span> Loading orders…</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════ VOICE FAB ══════════════════ -->
+<div class="voice-fab" role="region" aria-label="Voice ordering">
+  <button class="voice-btn" id="voice-btn"
+          aria-label="Hold to use voice command"
+          aria-pressed="false"
+          title="Hold to speak">
+    <!-- Mic icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0
+               1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16
+               12 16s-4.52-1.8-4.93-4.15a.998.998 0 0 0-.98-.85c-.61 0-1.09.54-1
+               1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08a6.993
+               6.993 0 0 0 5.91-5.78c.1-.6-.39-1.14-1-1.14z"/>
+    </svg>
+  </button>
+  <span class="voice-label" aria-hidden="true">Hold to speak</span>
+</div>
+
+<!-- ══════════════════ TOAST CONTAINER ══════════════════ -->
+<div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ══════════════════ MODAL: ORDER CONFIRMATION ══════════════════ -->
+<div class="modal-backdrop" id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+  <div class="modal">
+    <div class="modal-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    </div>
+    <h2 id="modal-confirm-title">Order Placed! 🎉</h2>
+    <p class="modal-detail">Your order ID is</p>
+    <div class="modal-order-id" id="modal-order-id">#---</div>
+    <p class="modal-detail" id="modal-slot-detail">Pickup: —</p>
+    <p class="modal-detail" id="modal-wait-detail"></p>
+    <button class="btn-modal-close" id="modal-confirm-close">Got it!</button>
+  </div>
+</div>
+
+<!-- ══════════════════ MODAL: VOICE CONFIRM ══════════════════ -->
+<div class="modal-backdrop" id="modal-voice" role="dialog" aria-modal="true" aria-labelledby="modal-voice-title">
+  <div class="modal">
+    <h2 id="modal-voice-title" style="font-size:1rem;text-align:left;margin-bottom:.4rem;">Voice Command</h2>
+    <p style="font-size:.82rem;color:#666;margin-bottom:.25rem;">Heard:</p>
+    <div class="voice-transcript" id="voice-transcript-text"></div>
+    <p style="font-size:.82rem;color:#666;margin:0.5rem 0 .2rem;">Parsed as:</p>
+    <div id="voice-parsed-display" style="font-size:.88rem;color:#333;background:var(--green-light);border-radius:8px;padding:.5rem .75rem;font-weight:600;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" id="voice-cancel">Cancel</button>
+      <button class="btn-confirm" id="voice-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCRIPT ══════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════
+   1. AUTH HELPERS
+═══════════════════════════════════════════════════ */
+function getToken() { return localStorage.getItem('access_token'); }
+function getCollegeId() { return localStorage.getItem('college_id') || localStorage.getItem('role') || ''; }
+
+function logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('college_id');
+  window.location.href = 'login.html';
+}
+
+/* Guarded fetch: injects auth header, handles 401/403 */
+async function apiFetch(url, opts = {}) {
+  const token = getToken();
+  if (!token) { logout(); return null; }
+
+  const headers = Object.assign({ 'Authorization': 'Bearer ' + token }, opts.headers || {});
+  if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof URLSearchParams)) {
+    headers['Content-Type'] = 'application/json';
+    opts = Object.assign({}, opts, { body: JSON.stringify(opts.body) });
+  }
+  opts = Object.assign({}, opts, { headers });
+
+  let res;
+  try {
+    res = await fetch(url, opts);
+  } catch (e) {
+    showToast('Network error — are you on the LAN?', 'error');
+    return null;
+  }
+
+  if (res.status === 401) { logout(); return null; }
+  if (res.status === 403) { showToast('Access denied.', 'error'); return null; }
+  if (res.status === 429) { showToast('Too many requests. Please wait a moment.', 'warn'); return null; }
+  return res;
+}
+
+/* ═══════════════════════════════════════════════════
+   2. BOOT — verify auth, populate header
+═══════════════════════════════════════════════════ */
+(function boot() {
+  const token = getToken();
+  if (!token) { window.location.href = 'login.html'; return; }
+
+  // college_id may be stored by login.html or we decode from JWT
+  let cid = localStorage.getItem('college_id');
+  if (!cid) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      cid = payload.sub || payload.college_id || '';
+      localStorage.setItem('college_id', cid);
+    } catch (_) { cid = ''; }
+  }
+  document.getElementById('display-college-id').textContent = cid;
+})();
+
+document.getElementById('btn-logout').addEventListener('click', logout);
+
+/* ═══════════════════════════════════════════════════
+   3. TAB NAVIGATION
+═══════════════════════════════════════════════════ */
+const sectionMap = {
+  menu:     document.getElementById('sec-menu'),
+  slots:    document.getElementById('sec-slots'),
+  summary:  document.getElementById('sec-summary'),
+  myorders: document.getElementById('sec-myorders'),
+};
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.section === name));
+  Object.entries(sectionMap).forEach(([k, el]) => el.classList.toggle('active', k === name));
+  if (name === 'myorders') loadMyOrders();
+  if (name === 'slots') loadSlots();
+  if (name === 'summary') renderSummary();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.section));
+});
+
+/* ═══════════════════════════════════════════════════
+   4. TOAST
+═══════════════════════════════════════════════════ */
+function showToast(msg, type = '') {
+  const tc = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  tc.appendChild(el);
+  requestAnimationFrame(() => { el.classList.add('show'); });
+  setTimeout(() => {
+    el.classList.remove('show');
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+  }, 3500);
+}
+
+/* ═══════════════════════════════════════════════════
+   5. CART STATE
+═══════════════════════════════════════════════════ */
+// cart: Map<menuItemId, { id, name, price, qty }>
+const cart = new Map();
+let menuItems = [];   // full menu from API (all items, incl unavailable for voice matching)
+let selectedSlot = null; // { id, slot_time, capacity, order_count, available }
+let slotsData = [];   // all slots from API
+
+function cartCount() { return [...cart.values()].reduce((s, v) => s + v.qty, 0); }
+function cartTotal() { return [...cart.values()].reduce((s, v) => s + v.price * v.qty, 0); }
+
+function updateCartBadge() {
+  const c = cartCount();
+  const badge = document.getElementById('cart-count');
+  if (c > 0) { badge.textContent = c; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+}
+
+/* ═══════════════════════════════════════════════════
+   6. MENU
+═══════════════════════════════════════════════════ */
+async function loadMenu() {
+  const grid = document.getElementById('menu-grid');
+  grid.innerHTML = '<div class="loading-row"><span class="spinner"></span> Loading menu…</div>';
+
+  // Menu is public but we still pass auth header if available
+  const res = await apiFetch('/api/menu');
+  if (!res) { grid.innerHTML = '<div class="loading-row">Could not load menu.</div>'; return; }
+  if (!res.ok) { grid.innerHTML = '<div class="loading-row">Could not load menu.</div>'; return; }
+
+  const items = await res.json();
+  menuItems = items;
+
+  // Also fetch unavailable items for voice matching (menu only returns available ones)
+  // Store what we have; voice parser can still work with available items
+
+  buildCategoryFilter(items);
+  renderMenuGrid(items, 'all');
+}
+
+function buildCategoryFilter(items) {
+  const cats = [...new Set(items.map(i => i.category).filter(Boolean))];
+  const cf = document.getElementById('cat-filter');
+  cf.innerHTML = '<button class="cat-chip active" data-cat="all">All</button>';
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-chip';
+    btn.dataset.cat = cat;
+    btn.textContent = cat;
+    cf.appendChild(btn);
+  });
+  cf.addEventListener('click', e => {
+    const btn = e.target.closest('.cat-chip');
+    if (!btn) return;
+    cf.querySelectorAll('.cat-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMenuGrid(menuItems, btn.dataset.cat);
+  });
+}
+
+function renderMenuGrid(items, catFilter) {
+  const grid = document.getElementById('menu-grid');
+  const filtered = catFilter === 'all' ? items : items.filter(i => i.category === catFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="loading-row">No items found.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  filtered.forEach(item => {
+    const qty = cart.has(item.id) ? cart.get(item.id).qty : 0;
+    const card = document.createElement('div');
+    card.className = 'menu-card' + (item.is_available === false ? ' unavailable' : '');
+    card.dataset.id = item.id;
+    card.setAttribute('role', 'article');
+    card.setAttribute('aria-label', item.name);
+    card.innerHTML = `
+      <div class="menu-card-header">
+        <span class="menu-item-name">${esc(item.name)}</span>
+        <span class="menu-item-price">₹${Number(item.price).toFixed(2)}</span>
+      </div>
+      <span class="menu-category-badge">${esc(item.category || '')}</span>
+      <p class="menu-item-desc">${esc(item.description || '')}</p>
+      <div class="menu-card-controls">
+        <div class="stepper" role="group" aria-label="Quantity for ${esc(item.name)}">
+          <button class="stepper-btn dec" aria-label="Decrease quantity" ${qty <= 0 ? 'disabled' : ''}>−</button>
+          <span class="stepper-val" aria-live="polite" aria-atomic="true">${qty}</span>
+          <button class="stepper-btn inc" aria-label="Increase quantity" ${qty >= 10 ? 'disabled' : ''}>+</button>
+        </div>
+        <button class="btn-add" aria-label="Add ${esc(item.name)} to cart" ${qty <= 0 ? 'disabled' : ''}>Add</button>
+      </div>
+    `;
+
+    const decBtn  = card.querySelector('.dec');
+    const incBtn  = card.querySelector('.inc');
+    const valSpan = card.querySelector('.stepper-val');
+    const addBtn  = card.querySelector('.btn-add');
+
+    function syncStepper(v) {
+      valSpan.textContent = v;
+      decBtn.disabled = v <= 0;
+      incBtn.disabled = v >= 10;
+      addBtn.disabled = v <= 0;
+    }
+
+    function getQty() { return parseInt(valSpan.textContent, 10); }
+
+    decBtn.addEventListener('click', () => {
+      const v = Math.max(0, getQty() - 1);
+      syncStepper(v);
+    });
+    incBtn.addEventListener('click', () => {
+      const v = Math.min(10, getQty() + 1);
+      syncStepper(v);
+    });
+
+    addBtn.addEventListener('click', () => {
+      const q = getQty();
+      if (q <= 0) return;
+      cart.set(item.id, { id: item.id, name: item.name, price: item.price, qty: q });
+      updateCartBadge();
+      showToast(`${item.name} × ${q} added to cart`, 'success');
+      // reset stepper
+      syncStepper(0);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   7. SLOT PICKER
+═══════════════════════════════════════════════════ */
+async function loadSlots() {
+  const grid = document.getElementById('slots-grid');
+  grid.innerHTML = '<div class="loading-row"><span class="spinner"></span> Loading slots…</div>';
+
+  const res = await apiFetch('/api/slots');
+  if (!res || !res.ok) {
+    grid.innerHTML = '<div class="loading-row">Could not load slots.</div>';
+    return;
+  }
+  slotsData = await res.json();
+  renderSlotsGrid();
+}
+
+function renderSlotsGrid() {
+  const grid = document.getElementById('slots-grid');
+  if (!slotsData.length) {
+    grid.innerHTML = '<div class="loading-row">No slots available today.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  slotsData.forEach(slot => {
+    const pct = slot.capacity > 0 ? slot.order_count / slot.capacity : 0;
+    const colour = pct >= 0.8 ? 'red' : pct >= 0.5 ? 'amber' : 'green';
+    const isFull  = slot.available <= 0 || !slot.is_active;
+    const isSelected = selectedSlot && selectedSlot.id === slot.id;
+
+    const card = document.createElement('div');
+    card.className = `slot-card ${colour}${isFull ? ' full' : ''}${isSelected ? ' selected' : ''}`;
+    card.setAttribute('role', 'option');
+    card.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    card.setAttribute('aria-disabled', isFull ? 'true' : 'false');
+    card.setAttribute('tabindex', isFull ? '-1' : '0');
+    card.dataset.id = slot.id;
+
+    const t = new Date(slot.slot_time);
+    const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const availStr = isFull ? 'Full' : `${slot.available} left`;
+
+    card.innerHTML = `
+      <div class="slot-time">${esc(timeStr)}</div>
+      <div class="slot-avail"><span class="slot-dot"></span>${esc(availStr)}</div>
+    `;
+
+    if (!isFull) {
+      const selectSlot = () => {
+        selectedSlot = slot;
+        renderSlotsGrid(); // re-render to update selection
+        updateWaitChip();
+        checkWaitBanner();
+      };
+      card.addEventListener('click', selectSlot);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSlot(); } });
+    }
+    grid.appendChild(card);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   8. WAIT TIME CHIP & BANNER
+═══════════════════════════════════════════════════ */
+function calcWaitMinutes(slot) {
+  if (!slot) return 0;
+  const throughput = 2; // default; real value from backend
+  return Math.round((slot.order_count / throughput) * 10) / 10;
+}
+
+function updateWaitChip() {
+  const chip = document.getElementById('wait-chip');
+  if (!selectedSlot) {
+    chip.textContent = '⏱ Select a slot';
+    chip.classList.remove('warn');
+    return;
+  }
+  const wait = calcWaitMinutes(selectedSlot);
+  chip.textContent = `⏱ ~${wait} min wait`;
+  chip.classList.toggle('warn', wait > 5);
+}
+
+function checkWaitBanner() {
+  const banner = document.getElementById('wait-banner');
+  if (!selectedSlot) { banner.classList.remove('visible'); return; }
+
+  const wait = calcWaitMinutes(selectedSlot);
+  if (wait <= 5) { banner.classList.remove('visible'); return; }
+
+  // Find a suggested quieter slot
+  const now = new Date();
+  const currentTime = new Date(selectedSlot.slot_time);
+  const quieter = slotsData
+    .filter(s => s.id !== selectedSlot.id && s.available > 0 && s.is_active)
+    .sort((a, b) => a.order_count - b.order_count || new Date(a.slot_time) - new Date(b.slot_time))[0];
+
+  let text = `⚠ Estimated wait: ${wait} min.`;
+  if (quieter) {
+    const qt = new Date(quieter.slot_time);
+    const qtStr = qt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const qWait = calcWaitMinutes(quieter);
+    text += ` Try <span class="suggest-link" data-slot-id="${quieter.id}">${qtStr}</span> (~${qWait} min) for a shorter wait.`;
+  }
+  document.getElementById('wait-banner-text').innerHTML = text;
+  banner.classList.add('visible');
+
+  // Handle suggest link click
+  const lnk = banner.querySelector('.suggest-link');
+  if (lnk) {
+    lnk.addEventListener('click', () => {
+      const sid = parseInt(lnk.dataset.slotId, 10);
+      const s = slotsData.find(x => x.id === sid);
+      if (s) { selectedSlot = s; renderSlotsGrid(); updateWaitChip(); checkWaitBanner(); }
+    });
+  }
+}
+
+// Refresh slots every 30 s to keep occupancy live
+setInterval(async () => {
+  if (!document.getElementById('sec-slots').classList.contains('active')) return;
+  const res = await apiFetch('/api/slots');
+  if (res && res.ok) {
+    slotsData = await res.json();
+    // Update selectedSlot data
+    if (selectedSlot) {
+      const refreshed = slotsData.find(s => s.id === selectedSlot.id);
+      if (refreshed) selectedSlot = refreshed;
+    }
+    renderSlotsGrid();
+    updateWaitChip();
+    checkWaitBanner();
+  }
+}, 30000);
+
+/* ═══════════════════════════════════════════════════
+   9. ORDER SUMMARY
+═══════════════════════════════════════════════════ */
+function renderSummary() {
+  const emptyEl   = document.getElementById('summary-empty');
+  const contentEl = document.getElementById('summary-content');
+  const errEl     = document.getElementById('place-order-err');
+
+  errEl.style.display = 'none';
+
+  if (cart.size === 0) {
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  // Slot info
+  const slotInfoEl = document.getElementById('summary-slot-info');
+  if (selectedSlot) {
+    const t = new Date(selectedSlot.slot_time);
+    const ts = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    slotInfoEl.innerHTML = `Pickup slot: <strong>${ts}</strong> (${selectedSlot.available} spots remaining)`;
+  } else {
+    slotInfoEl.innerHTML = `Pickup slot: <strong style="color:var(--amber)">None selected — go to Pick Slot tab</strong>`;
+  }
+
+  // Items
+  const itemsEl = document.getElementById('summary-items');
+  itemsEl.innerHTML = '';
+  for (const [id, item] of cart.entries()) {
+    const row = document.createElement('div');
+    row.className = 'summary-row';
+    row.innerHTML = `
+      <span class="summary-row-name">${esc(item.name)}</span>
+      <span class="summary-row-qty">× ${item.qty}</span>
+      <span class="summary-row-price">₹${(item.price * item.qty).toFixed(2)}</span>
+      <button class="summary-row-del" aria-label="Remove ${esc(item.name)}" data-id="${id}">✕</button>
+    `;
+    row.querySelector('.summary-row-del').addEventListener('click', () => {
+      cart.delete(id);
+      updateCartBadge();
+      renderSummary();
+    });
+    itemsEl.appendChild(row);
+  }
+
+  // Total
+  document.getElementById('summary-total-price').textContent = `₹${cartTotal().toFixed(2)}`;
+
+  // Place order button
+  const btn = document.getElementById('btn-place-order');
+  btn.disabled = !selectedSlot;
+  btn.textContent = selectedSlot ? 'Place Order' : 'Select a Slot First';
+}
+
+document.getElementById('btn-place-order').addEventListener('click', async () => {
+  if (!selectedSlot || cart.size === 0) return;
+  await placeOrder(selectedSlot.id, [...cart.entries()].map(([id, v]) => ({
+    menu_item_id: parseInt(id, 10), quantity: v.qty
+  })));
+});
+
+async function placeOrder(slotId, items) {
+  const btn    = document.getElementById('btn-place-order');
+  const errEl  = document.getElementById('place-order-err');
+  errEl.style.display = 'none';
+
+  btn.disabled = true;
+  btn.textContent = 'Placing order…';
+
+  const res = await apiFetch('/api/orders', {
+    method: 'POST',
+    body: { slot_id: slotId, items }
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Place Order';
+
+  if (!res) return; // handled by apiFetch
+
+  if (!res.ok) {
+    let detail = 'Could not place order.';
+    try { const d = await res.json(); detail = d.detail || detail; } catch (_) {}
+    errEl.textContent = detail;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const data = await res.json();
+
+  // Clear cart
+  cart.clear();
+  updateCartBadge();
+
+  // Show confirmation modal
+  const pickupTime = new Date(data.slot_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('modal-order-id').textContent = '#' + data.order_id;
+  document.getElementById('modal-slot-detail').innerHTML = `Pickup at <strong>${pickupTime}</strong>`;
+  document.getElementById('modal-wait-detail').textContent =
+    data.wait_time_minutes != null ? `Estimated wait: ~${data.wait_time_minutes} min` : '';
+
+  openModal('modal-confirm');
+
+  // Refresh slots so counts are current
+  if (slotsData.length) loadSlots();
+}
+
+/* ═══════════════════════════════════════════════════
+   10. MY ORDERS
+═══════════════════════════════════════════════════ */
+async function loadMyOrders() {
+  const wrap = document.getElementById('orders-wrap');
+  wrap.innerHTML = '<div class="loading-row"><span class="spinner"></span> Loading orders…</div>';
+
+  const res = await apiFetch('/api/orders/my');
+  if (!res || !res.ok) {
+    wrap.innerHTML = '<div class="loading-row">Could not load orders.</div>';
+    return;
+  }
+
+  const orders = await res.json();
+
+  if (!orders.length) {
+    wrap.innerHTML = '<div class="orders-empty">No orders yet. Place your first order!</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'orders-table';
+  table.setAttribute('aria-label', 'My orders');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th scope="col">#ID</th>
+        <th scope="col">Items</th>
+        <th scope="col">Slot</th>
+        <th scope="col">Status</th>
+        <th scope="col">Placed</th>
+      </tr>
+    </thead>
+    <tbody id="orders-tbody"></tbody>
+  `;
+
+  const tbody = table.querySelector('#orders-tbody');
+  orders.forEach(order => {
+    const tr = document.createElement('tr');
+
+    const itemsText = (order.items || []).map(i => `${i.name} × ${i.quantity}`).join(', ') || '—';
+    const slotTime  = order.slot_time ? new Date(order.slot_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const placedAt  = order.created_at ? new Date(order.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+    tr.innerHTML = `
+      <td><strong>#${order.id}</strong></td>
+      <td style="max-width:180px;font-size:.8rem;">${esc(itemsText)}</td>
+      <td style="white-space:nowrap;">${esc(slotTime)}</td>
+      <td><span class="status-badge ${esc(order.status)}">${esc(order.status)}</span></td>
+      <td style="font-size:.78rem;white-space:nowrap;color:#777;">${esc(placedAt)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  wrap.innerHTML = '';
+  wrap.appendChild(table);
+}
+
+document.getElementById('btn-refresh-orders').addEventListener('click', loadMyOrders);
+
+/* ═══════════════════════════════════════════════════
+   11. MODALS
+═══════════════════════════════════════════════════ */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.getElementById('modal-confirm-close').addEventListener('click', () => {
+  closeModal('modal-confirm');
+  switchTab('myorders');
+});
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => {
+    if (e.target === bd) closeModal(bd.id);
+  });
+});
+
+// ESC to close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-backdrop.open').forEach(bd => closeModal(bd.id));
+  }
+});
+
+/* ═══════════════════════════════════════════════════
+   12. VOICE COMMANDS
+═══════════════════════════════════════════════════ */
+const voiceBtn = document.getElementById('voice-btn');
+let recognition = null;
+let voiceParsed = null; // parsed intent to execute on confirm
+
+// Supported: 'order [qty] [item] for [time]'  |  'what is my wait time'
+function parseVoiceIntent(transcript) {
+  const t = transcript.toLowerCase().trim();
+
+  // Wait-time query
+  if (/what.*(my\s+)?wait\s*time/.test(t) || /how long.*(wait|queue)/.test(t)) {
+    return { type: 'wait_time' };
+  }
+
+  // Order intent: "order 2 masala dosa for 1:15" / "order masala dosa for 1:15 pm"
+  const orderMatch = t.match(/order\s+(?:(\d+)\s+)?(.+?)\s+for\s+(\d{1,2}[:.]\d{2}(?:\s*[ap]m?)?)/i);
+  if (orderMatch) {
+    const qty      = parseInt(orderMatch[1] || '1', 10);
+    const itemName = orderMatch[2].trim();
+    const timeStr  = orderMatch[3].trim();
+
+    // Match item name to menu (fuzzy: startsWith or includes)
+    const found = menuItems.find(m =>
+      m.name.toLowerCase() === itemName ||
+      m.name.toLowerCase().startsWith(itemName) ||
+      itemName.startsWith(m.name.toLowerCase()) ||
+      m.name.toLowerCase().includes(itemName) ||
+      itemName.includes(m.name.toLowerCase())
+    );
+
+    // Match time to slot
+    const slot = matchSlotByTime(timeStr);
+
+    return {
+      type: 'order',
+      rawItem: itemName,
+      item: found || null,
+      qty: Math.min(10, Math.max(1, isNaN(qty) ? 1 : qty)),
+      rawTime: timeStr,
+      slot: slot || null,
+    };
+  }
+
+  return { type: 'unknown' };
+}
+
+function matchSlotByTime(timeStr) {
+  // Parse "1:15", "13:15", "1:15 pm", "1:15pm"
+  const m = timeStr.match(/(\d{1,2})[.:](\d{2})\s*([ap]m?)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ampm = (m[3] || '').toLowerCase();
+  if (ampm.startsWith('p') && h < 12) h += 12;
+  if (ampm.startsWith('a') && h === 12) h = 0;
+  // If no am/pm and hour < 7, assume pm (canteen context)
+  if (!ampm && h < 7) h += 12;
+
+  return slotsData.find(s => {
+    const t = new Date(s.slot_time);
+    return t.getHours() === h && t.getMinutes() === min && s.available > 0 && s.is_active;
+  }) || null;
+}
+
+// Check browser speech support
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+  voiceBtn.title = 'Voice not supported in this browser';
+  voiceBtn.style.opacity = '0.4';
+  voiceBtn.disabled = true;
+} else {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    handleVoiceTranscript(transcript);
+  };
+
+  recognition.onerror = (e) => {
+    voiceBtn.classList.remove('listening');
+    voiceBtn.setAttribute('aria-pressed', 'false');
+    if (e.error === 'no-speech') showToast('No speech detected. Try again.', 'warn');
+    else if (e.error === 'not-allowed') showToast('Microphone access denied.', 'error');
+    else showToast('Voice error: ' + e.error, 'error');
+  };
+
+  recognition.onend = () => {
+    voiceBtn.classList.remove('listening');
+    voiceBtn.setAttribute('aria-pressed', 'false');
+  };
+
+  // Push-to-talk: mousedown/touchstart to start, mouseup/touchend to stop
+  ['mousedown', 'touchstart'].forEach(evt => {
+    voiceBtn.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if (voiceBtn.disabled) return;
+      voiceBtn.classList.add('listening');
+      voiceBtn.setAttribute('aria-pressed', 'true');
+      try { recognition.start(); } catch (_) { /* already started */ }
+    }, { passive: false });
+  });
+
+  ['mouseup', 'touchend', 'mouseleave'].forEach(evt => {
+    voiceBtn.addEventListener(evt, () => {
+      try { recognition.stop(); } catch (_) {}
+    });
+  });
+}
+
+function handleVoiceTranscript(transcript) {
+  if (!transcript.trim()) return;
+  const intent = parseVoiceIntent(transcript);
+
+  if (intent.type === 'wait_time') {
+    const wait = selectedSlot ? calcWaitMinutes(selectedSlot) : null;
+    const msg  = wait !== null
+      ? `Estimated wait for your selected slot is about ${wait} minute${wait === 1 ? '' : 's'}.`
+      : 'No slot selected yet.';
+    showToast(msg, '');
+    return;
+  }
+
+  if (intent.type === 'unknown') {
+    showToast('Sorry, I didn\'t catch that — try "order 2 masala dosa for 1:15" or use the touch screen.', 'warn');
+    return;
+  }
+
+  if (intent.type === 'order') {
+    // Show confirmation dialog
+    voiceParsed = intent;
+
+    document.getElementById('voice-transcript-text').textContent = `"${transcript}"`;
+
+    let parsedStr = '';
+    if (intent.item) {
+      parsedStr = `${intent.qty} × ${intent.item.name}`;
+      if (intent.slot) {
+        const t = new Date(intent.slot.slot_time);
+        parsedStr += ` at ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        parsedStr += ` at "${intent.rawTime}" (slot not found)`;
+      }
+    } else {
+      parsedStr = `Item "${intent.rawItem}" not recognised in the menu.`;
+    }
+    document.getElementById('voice-parsed-display').textContent = parsedStr;
+
+    const confirmBtn = document.getElementById('voice-confirm');
+    confirmBtn.disabled = !intent.item || !intent.slot;
+
+    openModal('modal-voice');
+  }
+}
+
+document.getElementById('voice-cancel').addEventListener('click', () => {
+  closeModal('modal-voice');
+  voiceParsed = null;
+});
+
+document.getElementById('voice-confirm').addEventListener('click', async () => {
+  if (!voiceParsed || !voiceParsed.item || !voiceParsed.slot) return;
+  closeModal('modal-voice');
+
+  const items = [{ menu_item_id: voiceParsed.item.id, quantity: voiceParsed.qty }];
+  const slotId = voiceParsed.slot.id;
+
+  // Set selected slot so summary is correct
+  selectedSlot = voiceParsed.slot;
+  updateWaitChip();
+  voiceParsed = null;
+
+  await placeOrder(slotId, items);
+});
+
+/* ═══════════════════════════════════════════════════
+   13. UTILS
+═══════════════════════════════════════════════════ */
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ═══════════════════════════════════════════════════
+   14. INIT
+═══════════════════════════════════════════════════ */
+loadMenu();
+loadSlots(); // pre-load slots so voice can match them immediately
+</script>
+</body>
+</html>
