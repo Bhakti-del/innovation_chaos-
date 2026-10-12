@@ -1209,7 +1209,7 @@
      aria-modal="true" aria-labelledby="pin-modal-title">
   <div class="modal">
     <h3 id="pin-modal-title">🔐 Staff PIN Required</h3>
-    <p class="modal-subtitle">Enter your 4-digit PIN to authorise this action</p>
+    <p class="modal-subtitle">Enter your 4-digit PIN to authorise this action <span style="color:var(--text-muted);font-size:0.78rem;">(demo PIN: 1234)</span></p>
 
     <div class="pin-display" aria-hidden="true">
       <div class="pin-dot" id="pin-d0"></div>
@@ -2053,8 +2053,11 @@ function setTranscript(text) {
 
 /* ── Voice command parser ── */
 async function handleVoiceCommand(transcript) {
+  // Strip trailing punctuation that speech recognition sometimes adds
+  transcript = transcript.replace(/[.,!?]+$/, '').trim();
+
   // Pattern 1: "mark [item] sold out"
-  const markMatch = transcript.match(/^mark\s+(.+?)\s+sold\s+out$/i);
+  const markMatch = transcript.match(/^mark\s+(.+?)\s+sold\s*out$/i);
   if (markMatch) {
     const itemQuery = markMatch[1].trim();
     const item = fuzzyFindItem(itemQuery);
