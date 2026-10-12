@@ -66,6 +66,10 @@ class StatusUpdateIn(BaseModel):
     status: str
 
 
+class MenuAvailabilityIn(BaseModel):
+    is_available: bool
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -115,6 +119,58 @@ def list_menu(db: Session = Depends(get_db)):
         }
         for item in items
     ]
+
+
+@router.get("/menu/all")
+def list_menu_all(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return all menu items including unavailable ones (staff/manager)."""
+    if current_user.role not in (UserRole.staff, UserRole.manager):
+        raise HTTPException(status_code=403, detail="Staff or manager access required")
+    items = db.query(MenuItem).all()
+    return [
+        {
+            "id": item.id,
+            "name": item.name,
+            "description": item.description,
+            "price": item.price,
+            "category": item.category,
+            "is_available": item.is_available,
+        }
+        for item in items
+    ]
+
+
+@router.patch("/menu/{item_id}")
+def update_menu_availability(
+    item_id: int,
+    payload: MenuAvailabilityIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Toggle menu item availability (staff/manager only)."""
+    if current_user.role not in (UserRole.staff, UserRole.manager):
+        raise HTTPException(status_code=403, detail="Staff or manager access required")
+
+    item: Optional[MenuItem] = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+
+    item.is_available = payload.is_available
+    _audit(db, current_user, "menu_availability_updated", {
+        "item_id": item_id,
+        "item_name": item.name,
+        "is_available": payload.is_available,
+    })
+    db.commit()
+    db.refresh(item)
+    return {
+        "id": item.id,
+        "name": item.name,
+        "is_available": item.is_available,
+    }
 
 
 # ---------------------------------------------------------------------------

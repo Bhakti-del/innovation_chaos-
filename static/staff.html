@@ -1665,9 +1665,9 @@ async function loadMenu() {
   hideError(errorEl);
 
   try {
-    const res = await apiFetch('/api/menu');
+    const res = await apiFetch('/api/menu/all');
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    // Menu returns available items only; we store them and also populate waste dropdown
+    // Fetch all items including unavailable so staff can toggle them
     menuItems = await res.json();
     renderMenuGrid();
     populateWasteDropdown();
